@@ -14,17 +14,17 @@ The tree is implemented as a Group but the node is displayed as a standard node.
 
 Limitations
 -----------
-Note that the add-on does not currently trap more than the required number of inputs to a function - ie, 'sin(x,y)' is treated as valid - the second input is still passed to the Maths node but will have no effect (since 'sine' only takes a single input). Similarly, with more than two inputs the additional inputs are not currently processed - so 'sin(x,y,z)' will be accepted but treated as 'sin(x)'.
+Note that the add-on does not currently trap more than the required number of inputs to a function - ie, `sin(x,y)` is treated as valid - the second input is still passed to the Maths node but will have no effect (since 'sine' only takes a single input). Similarly, with more than two inputs the additional inputs are not currently processed - so `sin(x,y,z)` will be accepted but treated as `sin(x)`.
 
 Future Development
 ------------------
 * Better syntax trapping and reporting with meaningful messages
 * Handling of incorrect number of arguments
-* Enhance Max, Min, Add, Subtract, Multiply, Divide to accept (and process) any number of arguments (eg, 'max(a,b,c,d,e,f)')
+* Enhance Max, Min, Add, Subtract, Multiply, Divide to accept (and process) any number of arguments (eg, `max(a,b,c,d,e,f)`)
 * Add-on settings to allow 'debug' mode to be enabled/disabled (access to the node tree)
 * Better layout of the nodes in the group (mostly works at present but can result in overlapping nodes)
 * Create documentation page
 * Handle constants - eg, 'pi' (currently interpreted as an input)
-* Support multiple equations per node - eg, 'dist=(x**2+y**2+z**2)**0.5,biggest=max(x,y,z)'
-* Allow such sub-values to be used as inputs - eg, 'dist=(x**2+y**2+z**2)**0.5,biggest=max(x,y,z),combined=dist*biggest'
-* Allow such sub-values to be hidden from the 'output' - eg, by prefixing name with '_'
+* Support multiple equations per node - eg, `dist=(x**2+y**2+z**2)**0.5,biggest=max(x,y,z)`
+* Allow such sub-values to be used as inputs - eg, `dist=(x**2+y**2+z**2)**0.5,biggest=max(x,y,z),combined=dist*biggest`
+* Allow such sub-values to be hidden from the 'output' - eg, by prefixing name with `_`
