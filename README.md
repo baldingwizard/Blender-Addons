@@ -4,6 +4,8 @@ Various Add-ons for Blender. Actually, just the one for now...
 
 MathsExpression
 ===============
+Download : https://github.com/baldingwizard/Blender-Addons/raw/master/MathsExpression.zip
+
 Allows you to simply type an equation and the add-on automatically builds the node tree for you using standard maths nodes. This allows a complicated tree to be very easily constructed and is still fully GPU compatible (since it's only using 'standard' nodes).
 
 The following operations are currently supported :
