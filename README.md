@@ -1,6 +1,7 @@
 # Blender-Addons
 
-Various Add-ons for Blender. Actually, just the one for now... 
+These add-ons are provided free to use for whatever purpose. However, if you do find them useful and wish to show your appreciation then please consider sending a donation to https://www.paypal.me/BaldingWizard. Any donation will be received with thanks and a pledge to return a proportionate amount of effort back into the Blender community.
+
 
 MathsExpression
 ===============
