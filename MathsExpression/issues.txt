@@ -1,0 +1,21 @@
+Known issues:
+
+equation parser
+===============
+* Precedence wrong with mixed mult and divide - need to fix order (perhaps additional passes?).
+
+eg, 
+    ((sin(x*20)+1)/2)*((sin(y*20)+1)/2)*((sin(z*20)+1)/2) 
+
+...produces the expected result but :
+
+    (sin(x*20)+1)/2*(sin(y*20)+1)/2*(sin(z*20)+1)/2
+
+...does not. It is effectively resulting in :
+
+    (sin(x*20)+1)/(2*(sin(y*20)+1)/(2*((sin(z*20)+1))))/2
+
+...or something. Probably same issue exists with addition and subtraction.
+
+
+^^^ Now fixed!

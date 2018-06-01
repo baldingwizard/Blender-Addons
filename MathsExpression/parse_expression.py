@@ -1,3 +1,11 @@
+# Author: Rich Sedman
+# Description: Parse maths expression into a nested list of seperate operations
+# Version: (0.3)
+# Date: May 2018
+################################################### History ######################################################
+# 0.3 01/06/2018 : Separate parsing of Multiplication/Division and Addition/Subtraction so that correct precedence
+#                  is maintained
+##################################################################################################################
 
 class Expression():
 
@@ -96,7 +104,7 @@ class Expression():
                 return ('<', Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
          
         i = 0
-        for c in (_expr):       # Next pass - addition and subtraction
+        for c in (_expr):       # Next pass - addition
             
             if (i == 0) and (c == '+'):     # Ignore leading positive sign
                 _expr = _expr[1:]
@@ -114,7 +122,32 @@ class Expression():
                 i+=1
                 continue
             
-            if (i > 0) and(c =='+' or c == '-') :   # Process addition and subtraction first (excluding leading positive or negative sign)
+            if (i > 0) and c =='+':   # Process addition
+                if not Expression.endsWithOperator(_expr[:i]): 
+                    return (c, Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
+            print("Pass1 : "+c)
+            i+=1
+
+        i = 0
+        for c in (_expr):       # Next pass - subtraction
+            
+            if (i == 0) and (c == '+'):     # Ignore leading positive sign
+                _expr = _expr[1:]
+                i+=1
+                continue
+
+            # Ignore any operator where there is an inbalance of brackets on either side
+            if (not Expression.balancedBrackets(_expr[:i])) or (not Expression.balancedBrackets(_expr[i:])):
+                print("Not Balanced ("+c+") : '"+_expr[:i]+"','"+_expr[i:]+"'")
+                i+=1
+                continue 
+            
+            if (i == 0) and (c == '-'):     # Process leading '-' as "0 - (_expr)"
+                return (c, '0', Expression.parse_expression(_expr[i+1:]))
+                i+=1
+                continue
+            
+            if (i > 0) and c == '-' :   # Process subtraction (excluding leading positive or negative sign)
                 if not Expression.endsWithOperator(_expr[:i]): 
                     return (c, Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
             print("Pass1 : "+c)
@@ -122,7 +155,7 @@ class Expression():
 
         skipnext = False  
         i = 0
-        for c in (_expr):       # Next pass - multiplication and division
+        for c in (_expr):       # Next pass - multiplication
             
             if skipnext:
                 skipnext = False
@@ -149,7 +182,36 @@ class Expression():
                 i+=1
                 continue
             
-            if (c =='*' or c == '/') :   # Process multiplication and division
+            if c =='*' :   # Process multiplication
+                return (c, Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
+                
+            i+=1
+            
+        skipnext = False  
+        i = 0
+        for c in (_expr):       # Next pass - division
+            
+            if skipnext:
+                skipnext = False
+                i+=1
+                continue
+            
+            if (i == 0) and (c == '+'):     # Ignore leading positive sign
+                _expr = _expr[1:]
+                i+=1
+                continue
+
+            # Ignore any operator where there is an inbalance of brackets on either side
+            if (not Expression.balancedBrackets(_expr[:i])) or (not Expression.balancedBrackets(_expr[i:])):
+                i+=1
+                continue 
+            
+            if (i == 0) and (c == '-'):     # Process leading '-' as "0 - (_expr)"
+                return (c, '0', Expression.parse_expression(_expr[i+1:]))
+                i+=1
+                continue
+            
+            if c == '/' :   # Process division
                 return (c, Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
                 
             i+=1

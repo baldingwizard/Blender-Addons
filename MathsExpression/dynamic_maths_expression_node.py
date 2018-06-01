@@ -1,3 +1,12 @@
+# Author: Rich Sedman
+# Description: Dynamic Maths Expresion node
+# Version: (0.4)
+# Date: May 2018
+################################################### History ######################################################
+# 0.4 01/06/2018 : Remove old redundant code
+##################################################################################################################
+
+
 import bpy
 
 from .parse_expression import Expression
@@ -6,12 +15,6 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
 
     bl_name='DynamicMathsExpression'
     bl_label='Dynamic Maths Expression'
-
-    # Return the list of valid operators
-    def modes(self, context):
-        nt=context.space_data.edit_tree
-        list=[('CLOSED','Closed',"Don't allow access to internal nodes"),('OPEN', 'Open', 'Allow access to internal nodes') ]
-        return list            
 
     # Manage the node's sockets, adding additional ones when needed and removing those no longer required
     def __nodeinterface_setup__(self):
@@ -26,16 +29,6 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
             self.node_tree.outputs.new("NodeSocketFloat", "Value")
         
         return
-
-        ## Look for input sockets that are no longer required and remove them
-        #for i in range(len(self.node_tree.inputs),0,-1):
-        #    if i > self.inputSockets:
-        #        self.node_tree.inputs.remove(self.node_tree.inputs[-1])
-        #
-        ## Add any additional input sockets that are now required
-        #for i in range(0, self.inputSockets):
-        #    if i > len(self.node_tree.inputs):
-        #        self.node_tree.inputs.new("NodeSocketFloat", "Value")
 
     def arrange_nodes(self, repulse, use_links):
         
@@ -132,20 +125,6 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
         # Start from Group Input and add nodes as required, chaining each new one to the previous level and the next input
         groupinput = self.node_tree.nodes['Group Input']
         previousnode = groupinput
-        #if self.inputSockets <= 1:
-        #    # Special case <= 1 input --> link input directly to output
-        #    self.node_tree.links.new(previousnode.outputs[0],self.node_tree.nodes['Group Output'].inputs[0])
-        #else:
-        #    # Create one node for each input socket > 1
-        #    for i in range(1, self.inputSockets):
-        #        newnode = self.node_tree.nodes.new('ShaderNodeMath')
-        #        newnode.operation = self.selectOperator
-        #        self.node_tree.links.new(previousnode.outputs[0],newnode.inputs[0])
-        #        self.node_tree.links.new(groupinput.outputs[i],newnode.inputs[1])
-        #        previousnode = newnode
-        #
-        #    # Connect the last one to the output
-        #    self.node_tree.links.new(previousnode.outputs[0],self.node_tree.nodes['Group Output'].inputs[0])
 
         print("About to parse expression...")
         operations = Expression.parse_expression(self.expressionText)
@@ -252,24 +231,12 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
                 print("Need to remove "+str(output))
                 self.node_tree.nodes['Group Input'].outputs.remove(output)  ### This doesn't appear to be working!!!!
 
-    # Chosen operator has changed - update the nodes and links
-    def update_mode(self, context):
-        self.__nodeinterface_setup__()
-        self.__nodetree_setup__()
-
-#    # Number of inputs has changed - update the nodes and links
-#    def update_inpSockets(self, context):
-#        self.__nodeinterface_setup__()
-#        self.__nodetree_setup__()
-
     # Expression has changed - update the nodes and links
     def update_expression(self, context):
         
         self.__nodeinterface_setup__()
         self.__nodetree_setup__()
 
-    # The node properties - Operator (Add, Subtract, etc.) and number of input sockets
-    selectMode=bpy.props.EnumProperty(name="selectMode", items=modes, update=update_mode)    
     expressionText = bpy.props.StringProperty(name="Expression", update=update_expression)
 
     # Setup the node - setup the node tree and add the group Input and Output nodes
@@ -282,9 +249,6 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
 
     # Draw the node components
     def draw_buttons(self, context, layout):
-        row=layout.row()
-        row.alert=(self.selectMode=='None')
-        row.prop(self, 'selectMode', text='')
         row=layout.row()
         row.prop(self, 'expressionText', text='Expression')
 
