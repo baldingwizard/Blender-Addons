@@ -1,9 +1,10 @@
 # Author: Rich Sedman
 # Description: Dynamic Maths Expresion node
-# Version: (0.4)
+# Version: (0.41)
 # Date: May 2018
 ################################################### History ######################################################
-# 0.4 01/06/2018 : Remove old redundant code
+# 0.4  01/06/2018 : Remove old redundant code
+# 0.41 02/06/2018 : Fix pruning of group inputs that are no longer required
 ##################################################################################################################
 
 
@@ -129,6 +130,7 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
         print("About to parse expression...")
         operations = Expression.parse_expression(self.expressionText)
         self.build_nodes(operations, self.node_tree.nodes['Group Output'].inputs[0], self.node_tree.nodes['Group Output'].location,0)
+        self.prune_group_inputs()
         
         for l in range(1,40):
             print("Arrange("+str(l)+")")
@@ -225,12 +227,17 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
                 newlocation[1]+=1/depth
                 self.build_nodes(nested_operations[2], newnode.inputs[1], newlocation,depth)
                 
+    def prune_group_inputs(self):
         #run through the 'Group Input' sockets and remove any that are no longer connected
         for output in self.node_tree.nodes['Group Input'].outputs:
             if len(output.name) > 0 and len(output.links) == 0:
                 print("Need to remove "+str(output))
-                self.node_tree.nodes['Group Input'].outputs.remove(output)  ### This doesn't appear to be working!!!!
-
+                #self.node_tree.nodes['Group Input'].outputs.remove(output)  ### This doesn't appear to be working!!!!
+                for input in self.node_tree.inputs:
+                    if input.name == output.name:
+                        self.node_tree.inputs.remove(input)
+                        print("Removed "+input.name)
+                
     # Expression has changed - update the nodes and links
     def update_expression(self, context):
         
