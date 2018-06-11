@@ -6,12 +6,14 @@
 # 0.4  01/06/2018 : Remove old redundant code
 # 0.41 02/06/2018 : Fix pruning of group inputs that are no longer required
 # 0.42 06/06/2018 : Start to support multiple expressions and improve auto-layout
+# 0.43 11/06/2018 : Move node layout tools into a separate class
 ##################################################################################################################
 
 
 import bpy
 
 from .parse_expression import Expression
+from .node_tree_tools import NodeTreeTools
 
 class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
 
@@ -31,101 +33,6 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
             self.node_tree.outputs.new("NodeSocketFloat", "Value")
         
         return
-
-    def arrange_nodes(self, repulse, use_links):
-        
-        forces = {}
-        for node in self.node_tree.nodes:
-
-            forcex = 0
-            forcey = 0
-
-            for node2 in self.node_tree.nodes:
-                if node == node2:
-                    continue
-                
-                nodeCentre = [node.location[0] + node.width/2, node.location[1] + node.height/2]
-                node2Centre = [node2.location[0] + node2.width/2, node2.location[1] + node2.height/2]
-                
-                if repulse:
-                    #check if overlapping or 'too close'. If so, apply force to move them
-                    separation = [nodeCentre[0] - node2Centre[0], nodeCentre[1] - node2Centre[1]]
-                    distance = (separation[0]**2 + separation[1]**2) ** 0.5
-                    targetDistance = (node2.width+node2.height)/2 * 2
-                    
-                    if distance > 0 and distance < targetDistance:
-                        forcex += separation[0] / (distance+1) * 2
-                        forcey += separation[1] / (distance+1) * 8
-                        #print(node.name+" force = ("+str(forcex)+","+str(forcey)+")" + " SEP="+str(separation)+", DIST="+str(distance))
-                
-                if use_links:
-                    #check if connected. If so, apply x-force to move them
-                    if len(node.inputs) > 0:
-                        idx = -1
-                        for inp in node.inputs:
-                            idx+=1
-                    
-                            #if node2.name in forces:
-                            #    node2_force = forces[node2.name]
-                            
-                            #    node2_forcex = node2_force[0]
-                            #    node2_forcey = node2_force[1]
-                            #else:
-                            node2_forcex = 0
-                            node2_forcey = 0
-                                
-                            for link in inp.links:
-                                #print("Looking..."+str(link)+":"+str(link.from_socket.node)+":"+str(node2))
-                                if link.from_socket.node == node2:
-                                    #if node2.location[0] > node.location[0]-node.width*1.3:
-                                    #    node2_forcex -= 10
-                                    #    #print("GOT! "+str(node2.location)+","+str(node.location))
-                                    #else:
-                                    #    node2_forcex += 5
-                                    ##    #print("Not got! "+str(node2.location)+","+str(node.location))
-                                    delta = node2.location[0] - (node.location[0]-node.width*2.3)
-                                    node2_forcex -= delta/200+1
-                                    forcex += delta/200+1
-                    
-                                    # Get index and apply y-force to separate multiple inputs
-                                    if idx > 0:
-                                        if node2.location[1] > node.location[1]-node.height*1.3:
-                                            #print(node2.name+": "+str(node2.location[1])+", "+node.name+": "+str(node.location[1])+"("+str(node.height)+")")
-                                            node2_forcey -= 10*idx
-                                            forcey += 10*idx
-                                            #print(str(node2.name)+" ForceY = "+str(node2_forcey)+", idx="+str(idx))
-                                        else:
-                                            node2_forcey += 10
-                                            forcey -= 10
-                                    else:
-                                        if node2.location[1] < node.location[1]+node.height*1.3:
-                                            #print(node2.name+": "+str(node2.location[1])+", "+node.name+": "+str(node.location[1])+"("+str(node.height)+")")
-                                            node2_forcey += 10
-                                            forcey -= 10
-                                            #print(str(node2.name)+" ForceY = "+str(node2_forcey)+", idx="+str(idx))
-                                        else:
-                                            node2_forcey -= 10
-                                            forcey += 10
-                                            
-                            if node2.name in forces:
-                                forces[node2.name] = (forces[node2.name][0]+node2_forcex, forces[node2.name][1]+node2_forcey)
-                            else:
-                                forces[node2.name] = (node2_forcex, node2_forcey)
-                            #print("Node2 Forces = "+str(forces[node2.name]))
- 
-            if node.name in forces:
-                forces[node.name] = (forces[node.name][0]+forcex, forces[node.name][1]+forcey)
-                #print("ForceUpd(1) "+node.name+"("+str(node.width)+","+str(node.height)+")"+" = ("+str(forces[node.name][0])+","+str(forces[node.name][1])+")")
-            else:
-                forces[node.name] = (forcex, forcey)
-                #print("ForceNew(1) "+node.name+"("+str(node.width)+","+str(node.height)+")"+" = ("+str(forcex)+","+str(forcey)+")")
-
-        #move based on combined force
-        for node in self.node_tree.nodes:
-            #print("force on node "+str(node)+" = "+str(forces[node.name]))
-            node.location[0] += forces[node.name][0]*5
-            node.location[1] += forces[node.name][1]*5
-            
 
     # Manage the internal nodes to perform the chained operation - clear all the nodes and build from scratch each time.
     def __nodetree_setup__(self):
@@ -159,9 +66,10 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
         
         self.prune_group_inputs()
         
-        for l in range(1,100):
-            print("Arrange("+str(l)+")")
-            self.arrange_nodes(l>2, True)
+        #for l in range(1,100):
+        #    print("Arrange("+str(l)+")")
+        #    NodeTreeTools.arrange_nodes(self.node_tree, l>2, True)
+        NodeTreeTools.arrangeBasedOnHierarchy(self.node_tree)
         
     def build_nodes(self, nested_operations, to_output, output_location,depth):
         depth+=1
