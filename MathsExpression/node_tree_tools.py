@@ -109,7 +109,9 @@ class NodeTreeTools():
     _node_levels = []
     def arrangeBasedOnHierarchy(node_tree):
 
-    # Get 'Group Output' as the 'end' of the tree
+        del(NodeTreeTools._node_levels[:])
+    
+        # Get 'Group Output' as the 'end' of the tree
         endNode = node_tree.nodes['Group Output']
 
         # Scan back from the 'end', assigning levels along the way

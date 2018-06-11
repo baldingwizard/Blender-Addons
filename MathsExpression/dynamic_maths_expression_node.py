@@ -1,12 +1,13 @@
 # Author: Rich Sedman
 # Description: Dynamic Maths Expresion node
-# Version: (0.42)
+# Version: (0.44)
 # Date: May 2018
 ################################################### History ######################################################
 # 0.4  01/06/2018 : Remove old redundant code
 # 0.41 02/06/2018 : Fix pruning of group inputs that are no longer required
 # 0.42 06/06/2018 : Start to support multiple expressions and improve auto-layout
 # 0.43 11/06/2018 : Move node layout tools into a separate class
+# 0.44 11/06/2018 : Prune inputs and outputs no longer required for multi-expressions
 ##################################################################################################################
 
 
@@ -54,17 +55,41 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
         outputslot = 0
         while True:
             if operations[0] == ',':
+                # Multiple expressions - assign the first one then continue with the next
+                exprname = 'Value'
+                expr = operations[1]
+                if expr[0] == '=':
+                    # In the form '<var>=<expression>' - use <var> as the name
+                    if expr[1][0] == 'variable':
+                        exprname = expr[1][1]
+                        expr = expr[2]
+                        
                 if len(self.node_tree.outputs) < (outputslot+2):
-                    self.node_tree.outputs.new("NodeSocketFloat", "Value"+str(outputslot))
-                self.build_nodes(operations[1], self.node_tree.nodes['Group Output'].inputs[outputslot], self.node_tree.nodes['Group Output'].location,0)
+                    self.node_tree.outputs.new("NodeSocketFloat", exprname)
+                else:
+                    self.node_tree.outputs[outputslot].name = exprname;
+                    
+                self.build_nodes(expr, self.node_tree.nodes['Group Output'].inputs[outputslot], self.node_tree.nodes['Group Output'].location,0)
                 operations = operations[2]
             else:
-                self.build_nodes(operations, self.node_tree.nodes['Group Output'].inputs[outputslot], self.node_tree.nodes['Group Output'].location,0)
+                # Single expression - process it and then exit
+
+                exprname = 'Value'
+                expr = operations
+                if expr[0] == '=':
+                    # In the form '<var>=<expression>' - use <var> as the name
+                    if expr[1][0] == 'variable':
+                        exprname = expr[1][1]
+                        expr = expr[2]
+
+                self.node_tree.outputs[outputslot].name = exprname;
+                self.build_nodes(expr, self.node_tree.nodes['Group Output'].inputs[outputslot], self.node_tree.nodes['Group Output'].location,0)
                 break
                 
             outputslot += 1
         
         self.prune_group_inputs()
+        self.prune_group_outputs()
         
         #for l in range(1,100):
         #    print("Arrange("+str(l)+")")
@@ -172,6 +197,15 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
                     if input.name == output.name:
                         self.node_tree.inputs.remove(input)
                         print("Removed "+input.name)
+                
+    def prune_group_outputs(self):
+        #run through the 'Group Output' sockets and remove any that are no longer connected
+        for input in self.node_tree.nodes['Group Output'].inputs:
+            if len(input.name) > 0 and len(input.links) == 0:
+                for output in self.node_tree.outputs:
+                    if output.name == input.name:
+                        self.node_tree.outputs.remove(output)
+                        print("Removed "+output.name)
                 
     # Expression has changed - update the nodes and links
     def update_expression(self, context):

@@ -1,2 +1,3 @@
 Known issues:
 
+'Expression=something>somethingelse' not work due to '=' precedence (needs to be *lower* than '>', etc)
