@@ -1,10 +1,11 @@
 # Author: Rich Sedman
 # Description: Parse maths expression into a nested list of seperate operations
-# Version: (0.3)
+# Version: (0.4)
 # Date: May 2018
 ################################################### History ######################################################
 # 0.3 01/06/2018 : Separate parsing of Multiplication/Division and Addition/Subtraction so that correct precedence
 #                  is maintained
+# 0.4 15/06/2018 : Improve precedence for '=' to be below '<', '>', '>=', '<=', '==' for output socket label
 ##################################################################################################################
 
 class Expression():
@@ -74,7 +75,19 @@ class Expression():
                 expr2 = _expr[i+1:]
                 return (',', Expression.parse_expression(expr1),Expression.parse_expression(expr2))
         
-        for i in range(0,len(_expr)-1):   # Next pass - >=, <=, >, <, ==, = 
+        for i in range(0,len(_expr)-1):   # Next pass - = 
+            print(str(i)+" : "+_expr)
+            if _expr[i:i+2] == '==' :
+                i+=1        # Skip the next character also (to avoid the second '=' in '==')
+                continue
+            
+            elif _expr[i] == '=' and Expression.balancedBrackets(_expr[:i]) and Expression.balancedBrackets(_expr[i+1:]):
+                # 'x = y' - used to assign output socket name
+                expr1 = _expr[:i]
+                expr2 = _expr[i+1:]
+                return ('=', Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
+            
+        for i in range(0,len(_expr)-1):   # Next pass - >=, <=, >, <, == 
             print(str(i)+" : "+_expr)
             if _expr[i:i+2] == '>=' and Expression.balancedBrackets(_expr[:i]) and Expression.balancedBrackets(_expr[i+2:]):
                 # x>=y is equivalent to not(x<y)
@@ -90,12 +103,6 @@ class Expression():
                 expr1 = _expr[:i]
                 expr2 = _expr[i+2:]
                 return Expression.parse_expression("("+expr1+"<="+expr2+")*("+expr1+">="+expr2+")")
-            
-            elif _expr[i] == '=' and Expression.balancedBrackets(_expr[:i]) and Expression.balancedBrackets(_expr[i+1:]):
-                # 'x = y' => '(x<=y)*(x>=y)'
-                expr1 = _expr[:i]
-                expr2 = _expr[i+1:]
-                return ('=', Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
             
             elif _expr[i] == '>' and Expression.balancedBrackets(_expr[:i]) and Expression.balancedBrackets(_expr[i+1:]):
                 return ('>', Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
