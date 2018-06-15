@@ -1,6 +1,6 @@
 # Author: Rich Sedman
 # Description: Dynamic Maths Expresion node Blender Add-on
-# Version: (0.51)
+# Version: (0.52)
 # Date: May 2018
 ################################################### History ######################################################
 # 0.4  01/06/2018 : Fix problems in parse_expression (parse_expression v0.3)
@@ -10,6 +10,7 @@
 # 0.49 11/06/2018 : Separate out node layout tools and implement simpler hierarchy layout
 # 0.50 11/06/2018 : Support multi-expressions including naming with 'Name=expression' format.
 # 0.51 15/06/2018 : Improve operator precedence in parse_expression (v0.4)
+# 0.52 15/06/2018 : Fix minor bug in naming output sockets when multiple outputs added
 ##################################################################################################################
 
 bl_info = {  

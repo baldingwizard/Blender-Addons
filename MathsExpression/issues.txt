@@ -1,3 +1,4 @@
 Known issues:
 
-Need better (some!) expression error detection and reporting.
+* Need better (some!) expression error detection and reporting.
+

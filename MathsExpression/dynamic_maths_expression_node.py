@@ -1,6 +1,6 @@
 # Author: Rich Sedman
 # Description: Dynamic Maths Expresion node
-# Version: (0.44)
+# Version: (0.45)
 # Date: May 2018
 ################################################### History ######################################################
 # 0.4  01/06/2018 : Remove old redundant code
@@ -8,6 +8,7 @@
 # 0.42 06/06/2018 : Start to support multiple expressions and improve auto-layout
 # 0.43 11/06/2018 : Move node layout tools into a separate class
 # 0.44 11/06/2018 : Prune inputs and outputs no longer required for multi-expressions
+# 0.45 15/06/2018 : Fix allocation of name when adding multiple new outputs
 ##################################################################################################################
 
 
@@ -66,8 +67,8 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
                         
                 if len(self.node_tree.outputs) < (outputslot+2):
                     self.node_tree.outputs.new("NodeSocketFloat", exprname)
-                else:
-                    self.node_tree.outputs[outputslot].name = exprname;
+                
+                self.node_tree.outputs[outputslot].name = exprname;
                     
                 self.build_nodes(expr, self.node_tree.nodes['Group Output'].inputs[outputslot], self.node_tree.nodes['Group Output'].location,0)
                 operations = operations[2]
