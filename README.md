@@ -28,6 +28,12 @@ Future Development
 * Better layout of the nodes in the group (mostly works at present but can result in overlapping nodes)
 * Create documentation page
 * Handle constants - eg, 'pi' (currently interpreted as an input)
-* Support multiple equations per node - eg, `dist=(x**2+y**2+z**2)**0.5,biggest=max(x,y,z)`
-* Allow such sub-values to be used as inputs - eg, `dist=(x**2+y**2+z**2)**0.5,biggest=max(x,y,z),combined=dist*biggest`
-* Allow such sub-values to be hidden from the 'output' - eg, by prefixing name with `_`
+* Allow sub-values to be used as inputs - eg, `dist=(x**2+y**2+z**2)**0.5,biggest=max(x,y,z),combined=dist*biggest`
+* Allow sub-values to be hidden from the 'output' - eg, by prefixing name with `_`
+
+
+ParticlesToPath
+===============
+Download : https://github.com/baldingwizard/Blender-Addons/raw/master/ParticlesToPath.zip
+
+Adds an operator (accessible by pressing SPACE followed by typing 'Particle...') to convert a Particle System on the currently selected object into a (NURBS) curve. By emitting particles from a single vertex and then converting to a curve the path will follow the path of that vertex. This can be used to generate 'trails' as in this BSE answer : https://blender.stackexchange.com/a/94976/29586
