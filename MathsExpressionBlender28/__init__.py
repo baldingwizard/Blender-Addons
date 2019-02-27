@@ -28,27 +28,30 @@ bl_info = {
 
 import bpy
 
-from .dynamic_maths_expression_node import DynamicMathsExpressionNode, DynamicMathsExpression_Operator
+from .dynamic_maths_expression_node import DynamicMathsExpression_Operator, DynamicMathsExpressionEdit_Operator
 
 from nodeitems_utils import NodeItem, register_node_categories, unregister_node_categories
 from nodeitems_builtins import ShaderNodeCategory
 
 def menu_draw(self, context):
     self.layout.operator("node.node_dynamic_maths_expression")
+    self.layout.operator("node.node_dynamic_maths_expression_edit")
 
 bpy.types.NODE_MT_add.append(menu_draw)
 #TODO : Need to remove the menu when unregistered. Also, need to add it to Add/Group rather than Add
 
 #classes = ( DynamicMathsExpressionNode, )
-classes = ( DynamicMathsExpressionNode, DynamicMathsExpression_Operator)
+classes = ( DynamicMathsExpression_Operator, DynamicMathsExpressionEdit_Operator)
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
 
-    newcatlist = [ShaderNodeCategory("SH_NEW_CUSTOM", "Custom Nodes", items=[NodeItem("DynamicMathsExpressionNode"),DynamicMathsExpression_Operator])]
-    register_node_categories("CUSTOM_NODES", newcatlist)
+    #newcatlist = [ShaderNodeCategory("SH_NEW_CUSTOM", "Custom Nodes", items=[NodeItem("DynamicMathsExpressionNode"),DynamicMathsExpression_Operator])]
+    #newcatlist = [ShaderNodeCategory("SH_NEW_CUSTOM", "Custom Nodes", items=[NodeItem("DynamicMathsExpressionNode"),])]
+    #
+    #register_node_categories("CUSTOM_NODES", newcatlist)
 
 def unregister():
     from bpy.utils import unregister_class
