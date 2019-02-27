@@ -7,6 +7,9 @@ MathsExpression
 ===============
 Download : https://github.com/baldingwizard/Blender-Addons/raw/master/MathsExpression.zip
 
+Download(for Blender 2.8) : https://github.com/baldingwizard/Blender-Addons/raw/master/MathsExpression28.zip
+(Implemented as Operators within the Add menu, rather than a 'custom' node - this is more portable and works with Eevee. Still a work-in-progress.)
+
 Allows you to simply type an equation and the add-on automatically builds the node tree for you using standard maths nodes. This allows a complicated tree to be very easily constructed and is still fully GPU compatible (since it's only using 'standard' nodes).
 
 The following operations are currently supported :
