@@ -9,38 +9,16 @@
 # 0.43 11/06/2018 : Move node layout tools into a separate class
 # 0.44 11/06/2018 : Prune inputs and outputs no longer required for multi-expressions
 # 0.45 15/06/2018 : Fix allocation of name when adding multiple new outputs
+# 0.61 01/03/2019 : Redesign to use Operator for create/edit instead of custom node. Implemented as normal NodeGroup.
 ##################################################################################################################
 
 # New design for Blender 2.8 :
 #
-# New NodeCustomGroup node can be added to a nodetree as now. However, when expression entered,
-# instead of changing its own internal nodetree for the expression, create a new node group
-# and replace the current node with a 'Group' node with that new group, named 'Expr:<expresion>'
-# Within the group, add the 'custom' node which will reside within the group and act as a
-# 'controller', detecting changes to the expression (either via its own Expression field or by the
-# user changing the name of the NodeGroup. The 'custom' node should size and place itself over the
-# top of the internal nodes. The node should also have an 'apply' button that will turn it into a
-# 'normal' group so it can no longer be dynamically updated.
-#
-# Development strategy :
-# 1) Change the existing node so that when entering an expression it replaces itself with a Group node
-#    and moves itself within that group. The expression should update the internal nodes of that group
-#    which should automatically create sockets for input/output - as now.
-# 2) Enhance the Custom node so as to position itself over the nodes and changing the expression changes
-#    those nodes.
-# 3) Enhance the Custom node to detect changes in group name and automatically update its Expression and
-#    thus its associated nodes.
-# 4) Create 'Apply' to remove the Custom node and leave it as a 'normal' group. This should probably
-#    remove the 'Expr:' prefix also.
-# 5) Cater for multiple groups with the same name (by allowing for any '.001' suffix.
-# 6) Relocate the 'Add' menu so it's in the Group menu rather than 'Custom Nodes'.
-#
-# NOTE : I'm having trouble integrating with NodeCustomGroup... therefore, suggest an alternative approach
 # 1) Create as a modal operator - new option in Group menu to Add Expression Group
 # 2) Selecting this will popup a dialog box prompting for the expression
 # 3) Accepting the window with a valid expression will build the group
 # 4) If within an existing group then an option to 'edit expression' will be available (need to determine how we'll pickup the 'old' expression for editing since we won't actually be holding it anywhere... could use the 'group' name...?)
-# 5) Editing the expression will update the expression similar to how editing the expression already doesn
+# 5) Editing the expression will update the expression similar to how editing the expression already does
 
 
 
@@ -57,7 +35,7 @@ def get_active_node_tree(context):
     # Get nodes from currently edited tree.
     # If user is editing a group, space_data.node_tree is still the base level (outside group).
     # context.active_node is in the group though, so if space_data.node_tree.nodes.active is not
-    # the same as context.active_node, the user is in a group.
+    # the same as context.active_node, the user is in a group. (code from somewhere - can't remember where to credit)
     # Check recursively until we find the real active node_tree:
     if tree.nodes.active:
         while tree.nodes.active != context.active_node:
@@ -109,10 +87,6 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
     # Manage the node's sockets, adding additional ones when needed and removing those no longer required
     def __nodeinterface_setup__(self):
         print("Node interface setup")
-        # No operators --> no inpout or output sockets
-        #if self.inputSockets < 1:
-        #self.node_tree.inputs.clear()
-        #self.node_tree.outputs.clear()
         
         # Add the output socket
         if len(self.node_tree.outputs) < 1:
@@ -176,9 +150,6 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
         self.prune_group_inputs()
         self.prune_group_outputs()
         
-        #for l in range(1,100):
-        #    print("Arrange("+str(l)+")")
-        #    NodeTreeTools.arrange_nodes(self.node_tree, l>2, True)
         NodeTreeTools.arrangeBasedOnHierarchy(self.node_tree)
         
     def build_nodes(self, nested_operations, to_output, output_location,depth):
@@ -296,16 +267,9 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
 
     def execute_main(self, context):
         space = context.space_data
-        #node_tree = space.node_tree
         node_active = context.active_node
         node_selected = context.selected_nodes
-        
-        #validate the expression?
-        #expression = Expression.parse_expression(self.expressionText)
-        #print("TODO: need to check that the entered expression was valid!!")
-        
-        #    ...create 'group'
-        #    ...update the new group node's nodetree
+
         print(context)
         if context.space_data.type == 'NODE_EDITOR' and context.space_data.node_tree is not None:
             
@@ -316,16 +280,16 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                 groupnode.node_tree.nodes.new('NodeGroupInput')
                 groupnode.node_tree.nodes.new('NodeGroupOutput')
                 
-                #bpy.ops.node.translate_attach(TRANSFORM_OT_translate={
-                #        "value": (-500, 0, 0),
-                #        "remove_on_cancel": False,
-                #        "release_confirm": False,
-                #    })
-
-                #TODO: Position and size the node in centre of window and preferably put it in 'Grab' mode
-                #groupnode.location = self.location
-                #groupnode.width = self.width
+                # Position in centre
+                groupnode.location = context.region.view2d.region_to_view(context.region.width/2-groupnode.width/2, context.region.height/2+groupnode.height/2)
                 
+                # Ensure only the new node is selected
+                for node in context.selected_nodes:
+                    node.select = False
+                groupnode.select = True
+                
+                # TODO: Put it in 'grab' mode?
+                #...
             else:
                 # Update existing node group (assume selected node is the one to edit)
                 groupnode = context.selected_nodes[0]
@@ -333,14 +297,9 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
             groupnode.label = 'Expr: '+str(self.expressionText)
                 
         
-        #!!!NOTE : Need to have checks that there is only one 'selected'
-        #NodeTreeTools.arrangeBasedOnHierarchy(node_selected[0])
         self.node_tree = groupnode.node_tree
         self.__nodeinterface_setup__()
         self.__nodetree_setup__()
-        
-        #TODO : Put all 'inner' nodes in a Frame with a label based on the expression.
-        #(eg, select 'Group Output', select all 'linked' nodes, trigger 'create Frame')
         
         #TODO : Implement 'edit' mode where we can pickup the expression (from frame label) and edit it.
         #(ensure just one node is selected, ensure it's a Group node with a 'label' frame, retrieve expression, pre-populate field

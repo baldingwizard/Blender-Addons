@@ -11,13 +11,13 @@
 # 0.50 11/06/2018 : Support multi-expressions including naming with 'Name=expression' format.
 # 0.51 15/06/2018 : Improve operator precedence in parse_expression (v0.4)
 # 0.52 15/06/2018 : Fix minor bug in naming output sockets when multiple outputs added
-# 0.60 05/02/2019 : Bring up to date for Blender 2.8 API changes
+# 0.61 05/02/2019 : Bring up to date for Blender 2.8 API changes
 ##################################################################################################################
 
 bl_info = {  
  "name": "Dynamic Maths Expression",  
  "author": "Rich Sedman",  
- "version": (0, 60),  
+ "version": (0, 61),  
  "blender": (2, 80, 0),  
  "location": "Node Editor > Add > Custom_Nodes",  
  "description": "Adds a custom node that allows you to create a node tree from an arbitrary expression.",  
@@ -38,20 +38,14 @@ def menu_draw(self, context):
     self.layout.operator("node.node_dynamic_maths_expression_edit")
 
 bpy.types.NODE_MT_add.append(menu_draw)
-#TODO : Need to remove the menu when unregistered. Also, need to add it to Add/Group rather than Add
+#TODO : Need to add it to Add/Group rather than Add
 
-#classes = ( DynamicMathsExpressionNode, )
 classes = ( DynamicMathsExpression_Operator, DynamicMathsExpressionEdit_Operator)
 
 def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
-
-    #newcatlist = [ShaderNodeCategory("SH_NEW_CUSTOM", "Custom Nodes", items=[NodeItem("DynamicMathsExpressionNode"),DynamicMathsExpression_Operator])]
-    #newcatlist = [ShaderNodeCategory("SH_NEW_CUSTOM", "Custom Nodes", items=[NodeItem("DynamicMathsExpressionNode"),])]
-    #
-    #register_node_categories("CUSTOM_NODES", newcatlist)
 
 def unregister():
     from bpy.utils import unregister_class
