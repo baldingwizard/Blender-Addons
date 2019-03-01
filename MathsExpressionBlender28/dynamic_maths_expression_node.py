@@ -1,6 +1,6 @@
 # Author: Rich Sedman
 # Description: Dynamic Maths Expresion node
-# Version: (0.45)
+# Version: (0.90)
 # Date: May 2018
 ################################################### History ######################################################
 # 0.4  01/06/2018 : Remove old redundant code
@@ -9,7 +9,8 @@
 # 0.43 11/06/2018 : Move node layout tools into a separate class
 # 0.44 11/06/2018 : Prune inputs and outputs no longer required for multi-expressions
 # 0.45 15/06/2018 : Fix allocation of name when adding multiple new outputs
-# 0.61 01/03/2019 : Redesign to use Operator for create/edit instead of custom node. Implemented as normal NodeGroup.
+# 0.61 20/02/2019 : Redesign to use Operator for create/edit instead of custom node. Implemented as normal NodeGroup.
+# 0.90 01/03/2019 : Implement Edit and tidy up placement of created node.
 ##################################################################################################################
 
 # New design for Blender 2.8 :
@@ -293,7 +294,11 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
             else:
                 # Update existing node group (assume selected node is the one to edit)
                 groupnode = context.selected_nodes[0]
-
+                if self.createNew:
+                    groupnode.node_tree=bpy.data.node_groups.new("DynamicMathsExpressionGroup", 'ShaderNodeTree')
+                    groupnode.node_tree.nodes.new('NodeGroupInput')
+                    groupnode.node_tree.nodes.new('NodeGroupOutput')
+                
             groupnode.label = 'Expr: '+str(self.expressionText)
                 
         
@@ -315,7 +320,7 @@ class DynamicMathsExpression_Operator(_DynamicMathsExpression_Operator_common):
     label = 'Dynamice Maths Expression'
     mode = 'CREATE'
 
-    expressionText: bpy.props.StringProperty()
+    expressionText: bpy.props.StringProperty(description='Enter the expression', name='Expression')
 
     def __init__(self):
         super().__init__()
@@ -330,8 +335,8 @@ class DynamicMathsExpressionEdit_Operator(_DynamicMathsExpression_Operator_commo
     label = 'Dynamic Maths Expression(Edit)'
     mode = 'EDIT'
 
-    createNew: bpy.props.BoolProperty()
-    expressionText: bpy.props.StringProperty()
+    createNew: bpy.props.BoolProperty(name='Create New Group', description='Create a new group rather than updating the existing one (which would affect all group nodes using this group)')
+    expressionText: bpy.props.StringProperty(description='Enter the expression', name='Expression')
     
     def __init__(self):
         super().__init__()

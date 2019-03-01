@@ -1,6 +1,6 @@
 # Author: Rich Sedman
 # Description: Dynamic Maths Expresion node Blender Add-on
-# Version: (0.60)
+# Version: (0.90)
 # Date: May 2018
 ################################################### History ######################################################
 # 0.4  01/06/2018 : Fix problems in parse_expression (parse_expression v0.3)
@@ -12,12 +12,13 @@
 # 0.51 15/06/2018 : Improve operator precedence in parse_expression (v0.4)
 # 0.52 15/06/2018 : Fix minor bug in naming output sockets when multiple outputs added
 # 0.61 05/02/2019 : Bring up to date for Blender 2.8 API changes
+# 0.90 01/03/2019 : Implement Edit and tidy up placement of created node. 
 ##################################################################################################################
 
 bl_info = {  
  "name": "Dynamic Maths Expression",  
  "author": "Rich Sedman",  
- "version": (0, 61),  
+ "version": (0, 90),  
  "blender": (2, 80, 0),  
  "location": "Node Editor > Add > Custom_Nodes",  
  "description": "Adds a custom node that allows you to create a node tree from an arbitrary expression.",  
@@ -34,8 +35,8 @@ from nodeitems_utils import NodeItem, register_node_categories, unregister_node_
 from nodeitems_builtins import ShaderNodeCategory
 
 def menu_draw(self, context):
-    self.layout.operator("node.node_dynamic_maths_expression")
-    self.layout.operator("node.node_dynamic_maths_expression_edit")
+    self.layout.operator("node.node_dynamic_maths_expression", text='Maths Expression(New)')
+    self.layout.operator("node.node_dynamic_maths_expression_edit", text='Maths Expression(Edit)')
 
 bpy.types.NODE_MT_add.append(menu_draw)
 #TODO : Need to add it to Add/Group rather than Add
