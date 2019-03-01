@@ -5,10 +5,13 @@ These add-ons are provided free to use for whatever purpose provided you do no c
 
 MathsExpression
 ===============
-Download : https://github.com/baldingwizard/Blender-Addons/raw/master/MathsExpression.zip
-
-Download(for Blender 2.8) : https://github.com/baldingwizard/Blender-Addons/raw/master/MathsExpression28.zip
+Download :
+* Blender 2.79 : https://github.com/baldingwizard/Blender-Addons/raw/master/MathsExpression279.zip
+* Blender 2.8  : https://github.com/baldingwizard/Blender-Addons/raw/master/MathsExpression28.zip
 (Implemented as Operators within the Add menu, rather than a 'custom' node - this is more portable and works with Eevee. Still a work-in-progress.)
+
+* Old version  : https://github.com/baldingwizard/Blender-Addons/raw/master/MathsExpression.zip
+(Implemented as a dynamically updated NodeCustomGroup node)
 
 Allows you to simply type an equation and the add-on automatically builds the node tree for you using standard maths nodes. This allows a complicated tree to be very easily constructed and is still fully GPU compatible (since it's only using 'standard' nodes).
 
@@ -16,7 +19,14 @@ The following operations are currently supported :
 
 Addition, Subtraction, Multiply, Divide, Power, Sine, Cosine, Tangent, Arcsine, Arccosine, Arctangent, Absolute, Round, Greater Than, Less Than, Greater Than or Equals, Less Than or Equals, Equals, Maximum, Minimum, Modulo, Log, atan2(x,y)
 
-The tree is implemented as a Group but the node is displayed as a standard node. However, it is possible to get your hands on the actual node tree of the 'inner' workings via the standard 'Group' node. The node tree can be automatically layed out but this needs some additional refining so this feature will be disabled in the initial versions of the add-on (ie, only creation of the tree, no easy access to the internals). Future versions are planned to include options to 'ungroup' the nodes if desired.
+Operators are available in the Add menu to create a New node group based on an expression or to Edit an existing node group. The node group is automatically generated based on the expression using standard Maths nodes, with the Group Input and Group Output nodes automatically generated based on the variables of the equation. Multiple expressions can be included by listing as comma-separated.
+
+Some useful examples :
+
+* 'a+b+c+d', 'a*b*c*d' : Maths expressions with more than 2 inputs - simply list as many terms as you desire.
+* '(x*x+y*y+z*z)**0.5' : Vector distance (ie, sqrt(x^2+y^2+z^2)
+* sum=a+b+c,dist=(a**2+b**2+c**2)**0.5 : Multiple named equations - creates a node with 3 inputs and 2 outputs (named 'sum' and 'dist')
+* sin(theta*multiplier)+amplitude*cos(phi*multiplier2) : Example of using sin() and cos() functions
 
 Limitations
 -----------

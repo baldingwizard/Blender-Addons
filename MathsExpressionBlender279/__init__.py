@@ -1,6 +1,6 @@
 # Author: Rich Sedman
 # Description: Dynamic Maths Expresion node Blender Add-on
-# Version: (0.90)
+# Version: (0.89)
 # Date: May 2018
 ################################################### History ######################################################
 # 0.4  01/06/2018 : Fix problems in parse_expression (parse_expression v0.3)
@@ -12,15 +12,14 @@
 # 0.51 15/06/2018 : Improve operator precedence in parse_expression (v0.4)
 # 0.52 15/06/2018 : Fix minor bug in naming output sockets when multiple outputs added
 # 0.61 05/02/2019 : Bring up to date for Blender 2.8 API changes
-# 0.90 01/03/2019 : Implement Edit and tidy up placement of created node.
-# 0.91 01/03/2019 : Remove unnecessary import of ShaderNodeCategory (no longer used)
+# 0.89 01/03/2019 : Implement Edit and tidy up placement of created node. 
 ##################################################################################################################
 
 bl_info = {  
  "name": "Dynamic Maths Expression",  
  "author": "Rich Sedman",  
- "version": (0, 90),  
- "blender": (2, 80, 0),  
+ "version": (0, 89),  
+ "blender": (2, 79, 0),  
  "location": "Node Editor > Add > Custom_Nodes",  
  "description": "Adds a custom node that allows you to create a node tree from an arbitrary expression.",  
  "warning": "",  
@@ -33,6 +32,7 @@ import bpy
 from .dynamic_maths_expression_node import DynamicMathsExpression_Operator, DynamicMathsExpressionEdit_Operator
 
 from nodeitems_utils import NodeItem, register_node_categories, unregister_node_categories
+#from nodeitems_builtins import ShaderNodeCategory
 
 def menu_draw(self, context):
     self.layout.operator("node.node_dynamic_maths_expression", text='Maths Expression(New)')
