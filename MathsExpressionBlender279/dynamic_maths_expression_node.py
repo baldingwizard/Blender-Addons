@@ -1,6 +1,6 @@
 # Author: Rich Sedman
 # Description: Dynamic Maths Expresion node
-# Version: (0.89)
+# Version: (0.99)
 # Date: May 2018
 ################################################### History ######################################################
 # 0.4  01/06/2018 : Remove old redundant code
@@ -10,7 +10,10 @@
 # 0.44 11/06/2018 : Prune inputs and outputs no longer required for multi-expressions
 # 0.45 15/06/2018 : Fix allocation of name when adding multiple new outputs
 # 0.61 20/02/2019 : Redesign to use Operator for create/edit instead of custom node. Implemented as normal NodeGroup.
-# 0.89 01/03/2019 : Carry back from 0.90 to support for Blender 2.79
+# 0.90 01/03/2019 : Implement Edit and tidy up placement of created node.
+# 0.92 03/03/2019 : Include custom node within group to hold expression
+# 0.99 04/03/2019 : Implement Edit mode from custom node within group
+# 0.99a 04/03/2019 : Minor changes to make compatible with Blender 2.79
 ##################################################################################################################
 
 # New design for Blender 2.8 :
@@ -70,16 +73,45 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                 self.report({'ERROR'}, 'Must select only 1 node')
                 return {"CANCELLED"}
                 
-            if node_selected[0].label[0:5] != 'Expr:':
+            #if node_selected[0].label[0:5] != 'Expr:':
+            #    self.report({'ERROR'}, 'Selected node is not an Expression Group Node')
+            #    return {"CANCELLED"}
+            
+            # Check that the group has a DynamicMathsExpressionNode within (this indicates it's an editable node tree)
+            tree = node_selected[0].node_tree
+            
+            expressionNode = None
+            for node in tree.nodes:
+                if hasattr(node, 'bl_name') and node.bl_name=='DynamicMathsExpressionNode':
+                    expressionNode = node
+                    
+            if expressionNode == None:
                 self.report({'ERROR'}, 'Selected node is not an Expression Group Node')
                 return {"CANCELLED"}
-            
-            self.expressionText = str(node_selected[0].label[5:]).strip()
+                
+            self.expressionText = expressionNode.expressionText
             
             return wm.invoke_props_dialog(self)
-        
+               
         else:
-            return wm.invoke_props_dialog(self)
+            if self.mode == 'EDITWITHIN':
+                tree = get_active_node_tree(context)
+            
+                expressionNode = None
+                for node in tree.nodes:
+                    if hasattr(node, 'bl_name') and node.bl_name=='DynamicMathsExpressionNode':
+                        expressionNode = node
+                    
+                if expressionNode == None:
+                    self.report({'ERROR'}, 'Selected node is not an Expression Group Node')
+                    return {"CANCELLED"}
+                
+                self.expressionText = expressionNode.expressionText
+            
+                return wm.invoke_props_dialog(self)
+               
+            else:
+                return wm.invoke_props_dialog(self)
 
     def execute(self, context):
         self.execute_main(context)
@@ -106,6 +138,12 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
             else:
                 node.location = [0,0]
 
+        exprNode = self.node_tree.nodes.new('DynamicMathsExpressionNode')
+        exprNode.expressionText  = self.expressionText
+        #exprNode.width = 300    #TODO : Set width to full width of all nodes and position it above them all, spanning Group Input to Group Output
+        #exprNode.location = self.node_tree.nodes['Group Output'].location
+
+                
         # Start from Group Input and add nodes as required, chaining each new one to the previous level and the next input
         groupinput = self.node_tree.nodes['Group Input']
         previousnode = groupinput
@@ -152,6 +190,14 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
         self.prune_group_outputs()
         
         NodeTreeTools.arrangeBasedOnHierarchy(self.node_tree)
+
+        # Position the Expression Node above the nodes, spanning the Input->Output node distance
+        groupInputNode = self.node_tree.nodes['Group Input']
+        groupOutputNode = self.node_tree.nodes['Group Output']
+        
+        exprNode.location[0] = groupInputNode.location[0]
+        exprNode.location[1] = groupInputNode.location[1]+150
+        exprNode.width = groupOutputNode.location[0]+groupOutputNode.width-groupInputNode.location[0]
         
     def build_nodes(self, nested_operations, to_output, output_location,depth):
         depth+=1
@@ -265,7 +311,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                     if output.name == input.name:
                         self.node_tree.outputs.remove(output)
                         print("Removed "+output.name)
-
+                        
     def execute_main(self, context):
         space = context.space_data
         node_active = context.active_node
@@ -291,25 +337,28 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                 
                 # TODO: Put it in 'grab' mode?
                 #...
-            else:
-                # Update existing node group (assume selected node is the one to edit)
-                groupnode = context.selected_nodes[0]
-                if self.createNew:
-                    groupnode.node_tree=bpy.data.node_groups.new("DynamicMathsExpressionGroup", 'ShaderNodeTree')
-                    groupnode.node_tree.nodes.new('NodeGroupInput')
-                    groupnode.node_tree.nodes.new('NodeGroupOutput')
                 
-            groupnode.label = 'Expr: '+str(self.expressionText)
+                self.node_tree = groupnode.node_tree
+            
+            else:
+                if self.mode == 'EDIT':
+                # Update existing node group (assume selected node is the one to edit)
+                    groupnode = context.selected_nodes[0]
+                    self.node_tree = groupnode.node_tree
+
+                    if self.createNew:
+                        groupnode.node_tree=bpy.data.node_groups.new("DynamicMathsExpressionGroup", 'ShaderNodeTree')
+                        groupnode.node_tree.nodes.new('NodeGroupInput')
+                        groupnode.node_tree.nodes.new('NodeGroupOutput')
+
+                else:   #EDITWITHIN
+                    self.node_tree = get_active_node_tree(context)
+                
+            #groupnode.label = 'Expr: '+str(self.expressionText)
                 
         
-        self.node_tree = groupnode.node_tree
         self.__nodeinterface_setup__()
         self.__nodetree_setup__()
-        
-        #TODO : Implement 'edit' mode where we can pickup the expression (from frame label) and edit it.
-        #(ensure just one node is selected, ensure it's a Group node with a 'label' frame, retrieve expression, pre-populate field
-        # also, could provide checkbox to indicate whether should edit existing or create new. Edit existing should alter existing
-        # Group Input/Output to preserve links)
         
     
 class DynamicMathsExpression_Operator(_DynamicMathsExpression_Operator_common):
@@ -331,7 +380,7 @@ class DynamicMathsExpression_Operator(_DynamicMathsExpression_Operator_common):
         row = layout.row()
         row.prop(self, "expressionText")
         row = layout.row()
-    
+
 class DynamicMathsExpressionEdit_Operator(_DynamicMathsExpression_Operator_common):
     """Edit the selected Maths Expression Group"""
     
@@ -355,3 +404,54 @@ class DynamicMathsExpressionEdit_Operator(_DynamicMathsExpression_Operator_commo
         row = layout.row()
         row.prop(self, "expressionText")
         row = layout.row()
+
+class DynamicMathsExpressionEditWithin_Operator(_DynamicMathsExpression_Operator_common):
+    """Edit the Maths Expression Group from within the group"""
+    
+    bl_idname = "node.node_dynamic_maths_expression_editwithin"
+    bl_label = "Node Group - Dynamic Maths Expression(Edit(Within))"
+    bl_space_type = 'NODE_EDITOR'
+    label = 'Dynamic Maths Expression(Edit(Within))'
+    mode = 'EDITWITHIN'
+
+    #createNew = bpy.props.BoolProperty(name='Create New Group', description='Create a new group rather than updating the existing one (which would affect all group nodes using this group)')
+    expressionText = bpy.props.StringProperty(description='Enter the expression', name='Expression')
+    
+    def __init__(self):
+        super().__init__()
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Maths Expression")
+        row = layout.row()
+        row.prop(self, "expressionText")
+        row = layout.row()
+        
+class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
+    """Node to hold the expression text and provide Edit button"""
+    
+    expressionText = bpy.props.StringProperty(description='', name='Expression')
+    
+    bl_name='DynamicMathsExpressionNode'
+    bl_label='Dynamic Maths Expression'
+
+    # Setup the node - setup the node tree and add the group Input and Output nodes
+    def init(self, context):
+        print("Node Init")
+        self.node_tree=bpy.data.node_groups.new(self.bl_name, 'ShaderNodeTree')
+        if hasattr(self.node_tree, 'is_hidden'):
+            self.node_tree.is_hidden=False
+        self.node_tree.nodes.new('NodeGroupInput')
+        self.node_tree.nodes.new('NodeGroupOutput')
+
+    # Draw the node components
+    def draw_buttons(self, context, layout):
+        #print("draw_buttons(...)")
+        #row=layout.row()
+        #row.prop(self, 'expressionText', text='Expression')
+        row=layout.row()
+        row.label(text='Expression: '+str(self.expressionText))
+        row=layout.row()
+        row.operator('node.node_dynamic_maths_expression_editwithin', text='Edit')
+        
+        
