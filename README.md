@@ -40,8 +40,9 @@ Future Development
 
 ParticlesToPath
 ===============
-Blender 2.79 : https://github.com/baldingwizard/Blender-Addons/raw/master/ParticlesToPath279.zip
-Blender 2.8 : https://github.com/baldingwizard/Blender-Addons/raw/master/ParticlesToPath28.zip
+Download
+* Blender 2.79 : https://github.com/baldingwizard/Blender-Addons/raw/master/ParticlesToPath279.zip
+* Blender 2.8 : https://github.com/baldingwizard/Blender-Addons/raw/master/ParticlesToPath28.zip
 (Note : Blender 2.8 version has to currently be accessed via the operator (press F3 and type 'Particle...')
 
 Adds an option ('Particles to Nurbs') to the Add/Curve menu in the 3D View to convert a Particle System on the currently selected object into a (NURBS) curve. By emitting particles from a single vertex and then converting to a curve the path will follow the path of that vertex. This can be used to generate 'trails' as in this BSE answer : https://blender.stackexchange.com/a/94976/29586
