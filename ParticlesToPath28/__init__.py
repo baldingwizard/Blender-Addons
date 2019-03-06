@@ -1,17 +1,17 @@
 # Author: Rich Sedman
 # Description: Particles to Path - convert a stream of particles into a curve
-# Version: (0.04)
+# Version: (0.05)
 # Date: July 2018
 ################################################### History ######################################################
 # 0.01 13/07/2018 : Initial creation
 # 0.04 05/03/2019 : Added operator to Add/Curve menu
-# 0.05 05/03/2019 : Attempt to get compatible with Blender 2.8
+# 0.05 05/03/2019 : Compatility with Blender 2.8
 ##################################################################################################################
 
 bl_info = {  
  "name": "Particles to Path",  
  "author": "Rich Sedman",  
- "version": (0, 4),  
+ "version": (0, 5),  
  "blender": (2, 80, 0),  
  "location": "3d View operator",  
  "description": "Provides Operator to create a curve from  a stream of particles.",  
@@ -61,6 +61,7 @@ def menu_draw(self, context):
     #self.layout.operator("node.node_dynamic_maths_expression_edit", text='Maths Expression(Edit)')
 
 #bpy.types.INFO_MT_curve_add.append(menu_draw)
+bpy.types.VIEW3D_MT_curve_add.append(menu_draw)
 
 
 class ParticlesToPath_Operator(bpy.types.Operator):
