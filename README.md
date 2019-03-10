@@ -1,6 +1,6 @@
 # Blender-Addons
 
-These add-ons are provided free to use for whatever purpose provided you do no claim it as your own work and that you include a link to this site if redistributed. However, if you do find them useful and wish to show your appreciation then please consider sending a donation to https://www.paypal.me/BaldingWizard. Any donation will be received with thanks and a pledge to return a proportionate amount of effort back into the Blender community.
+These add-ons are provided free to use for whatever purpose provided you do not claim it as your own work and that you include a link to this site if redistributed. However, if you do find them useful and wish to show your appreciation then please consider sending a donation to https://www.paypal.me/BaldingWizard. Any donation will be received with thanks and a pledge to return a proportionate amount of effort back into the Blender community.
 
 See the Wiki : https://github.com/baldingwizard/Blender-Addons/wiki
 
