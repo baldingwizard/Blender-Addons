@@ -13,7 +13,7 @@ bl_info = {
  "name": "Vertex Color Blend",  
  "author": "Rich Sedman",  
  "version": (0, 2),  
- "blender": (2, 79, 0),  
+ "blender": (2, 80, 0),  
  "location": "3d View/Paint/Blend Vertex Colors",  
  "description": "Provides Operator to blend an object's vertex colors.",  
  "warning": "",  
