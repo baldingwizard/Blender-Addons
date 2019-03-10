@@ -1,10 +1,10 @@
 # Author: Rich Sedman
-# Description: Tools to convert a stream of particles to a curve
+# Description: Blend vertex colors over a mesh
 # Version: (0.02)
 # Date: July 2018
 ################################################### History ######################################################
-# 0.01  13/07/2018 : Initial version based on script developed for https://blender.stackexchange.com/questions/93921/how-to-add-trailing-light-effect-to-finger-tips/94976#94976
-# 0.02  04/03/2019 : Amended for compatibility with Blender 2.8
+# -.01 10/03/2019 : Initial creation
+# 0.02 10/03/2019 : Amend to allow for 3 or 4 elements of vertex color
 ##################################################################################################################
 
 
@@ -90,13 +90,21 @@ class VertexColorBlend():
     def get_vertex_color(obj, vertid):
         for loop in obj.data.loops:
             if loop.vertex_index == vertid:
-                return obj.data.vertex_colors[0].data[loop.index].color
+                #NOTE : It seems the vertex color includes Alpha in newer Blender versions
+                #       so just return the first 3 elements to be consistent.
+                c = obj.data.vertex_colors[0].data[loop.index].color
+                return (c[0],c[1],c[2])
         return (0.0,0.0,0.0)
 
     def set_vertex_color(obj, vertid, color):
         for loop in obj.data.loops:
             if loop.vertex_index == vertid:
-                obj.data.vertex_colors[0].data[loop.index].color = color
+                #NOTE : It seems the vertex color includes Alpha in newer Blender versions
+                #       Try assigning 3 elements first and if that fails, try 4.
+                try:
+                    obj.data.vertex_colors[0].data[loop.index].color = (color[0],color[1],color[2])
+                except:
+                    obj.data.vertex_colors[0].data[loop.index].color = (color[0],color[1],color[2],1.0)
 
     def average_color(vert_colors, vert_links, vertid):
 

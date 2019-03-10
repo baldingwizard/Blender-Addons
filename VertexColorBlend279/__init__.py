@@ -3,7 +3,8 @@
 # Version: (0.01)
 # Date: March 2019
 ################################################### History ######################################################
-# 0.01 13/07/2018 : Initial creation
+# 0.01 10/03/2019 : Initial creation
+# 0.02 10/03/2019 : Amend to allow for 3 or 4 elements of vertex color
 ##################################################################################################################
 
 #TODO: Add a tool panel for easy re-do
@@ -72,7 +73,7 @@ class VertexColorBlend_Operator(bpy.types.Operator):
             operator.report({'ERROR'}, "Vertex Group '"+str(operator.fixedVertexGroup)+"' does not exist")
             return
             
-        VertexColorBlend.color_vertices_rgb(object_selected[0], operator.fixedVertexGroup, operator.iterations, (operator.initialRed,operator.initialGreen,operator.initialBlue,1.0))
+        VertexColorBlend.color_vertices_rgb(object_selected[0], operator.fixedVertexGroup, operator.iterations, (operator.initialRed,operator.initialGreen,operator.initialBlue))
         
 
 def register():
