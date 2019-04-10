@@ -1,0 +1,2 @@
+# Wave3 : Variable thickness sine wave with three components
+Value = abs(Vector[x]-(sin(Vector[y]*Frequency1{10})*Amplitude1{0.7})-(sin(Vector[y]*Frequency2{6})*Amplitude2{0.4})-(sin(Vector[y]*Frequency3{14})*Amplitude3{0.3}))>Thickness{0.1}

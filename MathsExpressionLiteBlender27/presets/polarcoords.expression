@@ -1,0 +1,5 @@
+# Polar Coordinates : Convert a vector into Angle and Distance
+
+Angle=atan2(Vector[x], Vector[y])
+
+Distance=(Vector[x]**2+Vector[y]**2)**0.5

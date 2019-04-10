@@ -1,0 +1,2 @@
+# Wave : Variable thickness sine wave
+Value = abs(Vector[x]-(sin(Vector[y]*Frequency{10})*Amplitude{0.9}))>Thickness{0.1}

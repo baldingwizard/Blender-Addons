@@ -1,0 +1,23 @@
+# Mapping : Emulate a Mapping node, providing Translation, Rotation, Scale controllable via input nodes
+
+_transX = Vector[x] + OffsetX{0}
+_transY = Vector[y] + OffsetY{0}
+_transZ = Vector[z] + OffsetZ{0}
+
+_radiansX = AngleX / 360 * 2 * 3.1415
+_radiansY = AngleY / 360 * 2 * 3.1415
+_radiansZ = AngleZ / 360 * 2 * 3.1415
+
+_rot1X = _transX
+_rot1Y = _transY*cos(_radiansX{0}) + _transZ*sin(_radiansX)
+_rot1Z = 0-_transY*sin(_radiansX) + _transZ*cos(_radiansX)
+
+_rot2X = _rot1X*cos(_radiansY{0}) + _rot1Z*sin(_radiansY)
+_rot2Y = _rot1Y
+_rot2Z = 0-_rot1X*sin(_radiansY) + _rot1Z*cos(_radiansY)
+
+_rot3X = _rot2X*cos(_radiansZ{0}) + _rot2Y*sin(_radiansZ)
+_rot3Y = 0-_rot2X*sin(_radiansZ) + _rot2Y*cos(_radiansZ)
+_rot3Z = _rot2Z
+
+Output[] = combine(ScaleX{1} * _rot3X, ScaleY{1} * _rot3Y, ScaleZ{1} * _rot3Z)
