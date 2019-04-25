@@ -3,12 +3,13 @@
 # Date: May 2018
 ################################################### History ######################################################
 # 1.00 09/04/2019 : Initial version
+# 1.01 24/04/2019 : Fixes to handling of operator precedence and negative terms
 #################################################################################################################
 
 bl_info = {  
  "name": "Dynamic Maths Expression(Lite)",  
  "author": "Rich Sedman",  
- "version": (1, 0),  
+ "version": (1, 1),  
  "blender": (2, 76, 0),  
  "location": "Node Editor > Add",  
  "description": "Provide an option to create a new group from a typed maths expression (Lite).",  
@@ -24,6 +25,8 @@ from .dynamic_maths_expression_node import DynamicMathsExpression_Operator, Dyna
 from nodeitems_utils import NodeItem, register_node_categories, unregister_node_categories
 
 def menu_draw(self, context):
+    #Force 'invoke' when calling operator
+    self.layout.operator_context = "INVOKE_DEFAULT"
     self.layout.operator("node.node_dynamic_maths_expression", text='Maths Expression')
     
     # Edit is not required since we can now edit within the group itself via the custom node

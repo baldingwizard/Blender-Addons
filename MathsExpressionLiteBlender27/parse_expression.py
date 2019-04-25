@@ -160,7 +160,7 @@ class Expression():
 
     #List of functions along with how many arguments each can take (name, min, max)
     functionList = [('+',2,2),('-',2,2),('*',2,2),('/',2,2),('**',2,2),('sin',1,1),('cos',1,1),('tan',1,1),('asin',1,1),('acos',1,1),('atan',1,1),
-        ('min',2,99),('max',2,99),('mod',2,2),('abs',1,1),('log',2,2),('round',2,2),('atan2',2,2),('not',1,1),('and',2,99),('or',2,99),('xor',2,99),('mmod',2,2),('combine',1,3)]
+        ('min',2,99),('max',2,99),('mod',2,2),('abs',1,1),('log',2,2),('round',1,1),('atan2',2,2),('not',1,1),('and',2,99),('or',2,99),('xor',2,99),('mmod',2,2),('combine',1,3)]
     
     def extract_functions(operations):
         
@@ -373,118 +373,125 @@ class Expression():
         #    elif _expr[i] == '<' and Expression.balancedBrackets(_expr[:i]) and Expression.balancedBrackets(_expr[i+1:]):
         #        return ('<', Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
          
-        i = 0
-        for c in (_expr):       # Next pass - addition
+        #i = 0
+        #for c in (_expr):       # Next pass - addition
+        for i in reversed(range(0,len(_expr))):       # Next pass - addition
+            c = _expr[i]
             
             if (i == 0) and (c == '+'):     # Ignore leading positive sign
-                _expr = _expr[1:]
-                i+=1
+                #_expr = _expr[1:]
+                #i+=1
+                _expr[0] = ' '
                 continue
 
             # Ignore any operator where there is an inbalance of brackets on either side
             if (not Expression.balancedBrackets(_expr[:i])) or (not Expression.balancedBrackets(_expr[i:])):
                 Expression.debug_msg("Not Balanced ("+c+") : '"+_expr[:i]+"','"+_expr[i:]+"'")
-                i+=1
+                #i+=1
                 continue 
             
             if (i == 0) and (c == '-'):     # Process leading '-' as "0 - (_expr)"
-                return (c, '0', Expression.parse_expression(_expr[i+1:]))
-                i+=1
-                continue
+                return (c, ('value','0.0'), Expression.parse_expression(_expr[i+1:]))
+                #i+=1
+                #continue
             
             if (i > 0) and c =='+':   # Process addition
                 if not Expression.endsWithOperator(_expr[:i]): 
                     return (c, Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
             Expression.debug_msg("Pass1 : "+c)
-            i+=1
+            #i+=1
 
-        i = 0
-        for c in (_expr):       # Next pass - subtraction
+        #i = 0
+        #for c in (_expr):       # Next pass - subtraction
+        for i in reversed(range(0,len(_expr))):       # Next pass - subtraction
+            c = _expr[i]
             
-            if (i == 0) and (c == '+'):     # Ignore leading positive sign
-                _expr = _expr[1:]
-                i+=1
-                continue
+            #if (i == 0) and (c == '+'):     # Ignore leading positive sign
+            #    _expr = _expr[1:]
+            #    i+=1
+            #    continue
 
             # Ignore any operator where there is an inbalance of brackets on either side
             if (not Expression.balancedBrackets(_expr[:i])) or (not Expression.balancedBrackets(_expr[i:])):
                 Expression.debug_msg("Not Balanced ("+c+") : '"+_expr[:i]+"','"+_expr[i:]+"'")
-                i+=1
+                #i+=1
                 continue 
             
-            if (i == 0) and (c == '-'):     # Process leading '-' as "0 - (_expr)"
-                return (c, '0', Expression.parse_expression(_expr[i+1:]))
-                i+=1
-                continue
-            
+            #if (i == 0) and (c == '-'):     # Process leading '-' as "0 - (_expr)"
+            #    return (c, '0', Expression.parse_expression(_expr[i+1:]))
+                
             if (i > 0) and c == '-' :   # Process subtraction (excluding leading positive or negative sign)
                 if not Expression.endsWithOperator(_expr[:i]): 
                     return (c, Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
             Expression.debug_msg("Pass1 : "+c)
-            i+=1
+            #i+=1
 
         skipnext = False  
-        i = 0
-        for c in (_expr):       # Next pass - multiplication
+        #i = 0
+        #for c in (_expr):       # Next pass - multiplication
+        for i in reversed(range(0,len(_expr))):     # Next pass - multiplication
+            c = _expr[i]
             
             if skipnext:
                 skipnext = False
-                i+=1
+                #i+=1
                 continue
             
-            if (i == 0) and (c == '+'):     # Ignore leading positive sign
-                _expr = _expr[1:]
-                i+=1
-                continue
+            #if (i == 0) and (c == '+'):     # Ignore leading positive sign
+            #    _expr = _expr[1:]
+            #    i+=1
+            #    continue
 
             # Ignore any operator where there is an inbalance of brackets on either side
             if (not Expression.balancedBrackets(_expr[:i])) or (not Expression.balancedBrackets(_expr[i:])):
-                i+=1
+                #i+=1
                 continue 
             
-            if (i == 0) and (c == '-'):     # Process leading '-' as "0 - (_expr)"
-                return (c, '0', Expression.parse_expression(_expr[i+1:]))
-                i+=1
-                continue
+            #if (i == 0) and (c == '-'):     # Process leading '-' as "0 - (_expr)"
+            #    return (c, '0', Expression.parse_expression(_expr[i+1:]))
+            #    i+=1
+            #    continue
             
-            if (c == '*' and _expr[i+1:i+2] == '*'):    # Skip '**' operator for now
+            if (c == '*' and _expr[i-1:i] == '*'):    # Skip '**' operator for now
                 skipnext = True
-                i+=1
+                #i+=1
                 continue
             
-            if c =='*' :   # Process multiplication
+            if c == '*' :   # Process multiplication
                 return (c, Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
                 
-            i+=1
+            #i+=1
             
-        skipnext = False  
-        i = 0
-        for c in (_expr):       # Next pass - division
+        #skipnext = False  
+        #i = 0
+        #for c in (_expr):       # Next pass - division
+        for i in reversed(range(0,len(_expr))):     # Next pass - division
+            c = _expr[i]
             
-            if skipnext:
-                skipnext = False
-                i+=1
-                continue
-            
-            if (i == 0) and (c == '+'):     # Ignore leading positive sign
-                _expr = _expr[1:]
-                i+=1
-                continue
+            #if skipnext:
+            #    skipnext = False
+            #    i+=1
+            #    continue
+            #
+            #if (i == 0) and (c == '+'):     # Ignore leading positive sign
+            #    _expr = _expr[1:]
+            #    i+=1
+            #    continue
 
             # Ignore any operator where there is an inbalance of brackets on either side
             if (not Expression.balancedBrackets(_expr[:i])) or (not Expression.balancedBrackets(_expr[i:])):
-                i+=1
+                #i+=1
                 continue 
             
-            if (i == 0) and (c == '-'):     # Process leading '-' as "0 - (_expr)"
-                return (c, '0', Expression.parse_expression(_expr[i+1:]))
-                i+=1
-                continue
+            #if (i == 0) and (c == '-'):     # Process leading '-' as "0 - (_expr)"
+            #    return (c, '0', Expression.parse_expression(_expr[i+1:]))
+            #    i+=1
+            #    continue
             
             if c == '/' :   # Process division
                 return (c, Expression.parse_expression(_expr[:i]), Expression.parse_expression(_expr[i+1:]))
                 
-            i+=1
+            #i+=1
             
         i = 0
         for c in (_expr):       # Next pass - power

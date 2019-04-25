@@ -1,0 +1,123 @@
+echo "This will overwrite 'local' copies and those in Blender 2.7!!"
+echo "Are you sure? (y=continue)"
+
+read REPLY
+
+if [ "$REPLY" != 'y' ]
+then
+	echo "Aborted!"
+	exit 1
+fi
+
+BLENDER28SOURCE="C:/Users/Rich/AppData/Roaming/Blender Foundation/Blender/2.80/scripts/addons/MathsExpressionLiteBlender28"
+echo -e "\n\nCopy from '$BLENDER28SOURCE' and overwrite 'local' copy?"
+
+read REPLY
+
+if [ "$REPLY" = "y" ]
+then
+	echo "Copying..."
+	sleep 2
+
+	for file in `ls -1 "$BLENDER28SOURCE"|grep '\.py$'`
+	do
+		#echo "$file"
+		cp "$BLENDER28SOURCE/$file" MathsExpressionLiteBlender28 
+		#sleep 1
+	done
+
+fi
+
+function convert_to_27()
+{
+
+SOURCEDIR=$1
+DESTDIR=$2
+
+ZIP="c:/program files/7-zip/7z.exe"
+
+mv "$DESTDIR" "../old/$DESTDIR.`date +%Y%m%d.%H%M%S`"
+
+if [ "$?" -ne 0 ]
+then
+	echo "Failed to backup old version"
+	exit 2
+fi
+
+mkdir "$DESTDIR"
+
+if [ "$?" -ne 0 ]
+then
+	echo "Failed to create new empty directory"
+	exit 3
+fi
+
+for file in `ls -1 $SOURCEDIR`
+do
+	if [ ! -z "`echo $file|grep '\.py$'`" ]
+	then
+		#It's a 'py' file
+
+		#Convert 'XXXX[n]: bpy.props...' to 'XXXX = bpy.props...'
+		cat $SOURCEDIR/$file |sed 's/\([a-z][0-9]*\): bpy.prop/\1 = bpy.prop/' |sed 's/2, 80, 0/2, 76, 0/' >$DESTDIR/$file
+	else
+		#Copy it
+		cp -rfd "$SOURCEDIR"/"$file" "$DESTDIR"
+	fi
+done
+}
+
+echo -e "\n\nConvert 'lite' 28 version to 27?"
+read REPLY
+
+if [ "$REPLY" = "y" ]
+then
+	convert_to_27 MathsExpressionLiteBlender28 MathsExpressionLiteBlender27
+fi
+
+
+echo -e "\n\nRe-build ZIP files?"
+read REPLY
+
+if [ "$REPLY" = "y" ]
+then
+	echo "Rebuilding..."
+
+	for module in MathsExpressionLiteBlender27 MathsExpressionLiteBlender28
+	do
+		echo "$module"
+		rm -f "$module.zip"
+		"$ZIP" a "$module.zip" $module
+	done
+
+	ls -l *zip
+
+fi
+
+echo -e "\n\nUnpack to Blender 2.79 addons?"
+read REPLY
+
+if [ "$REPLY" = "y" ]
+then
+	# Unzip to 2.79 blender addons, with overwrite mode of 'all'
+	"$ZIP" x -aoa -o"c:/Users/rich/AppData/Roaming/Blender Foundation/Blender/2.79/scripts/addons" MathsExpressionLiteBlender27.zip
+fi
+
+echo -e "\n\nRename ZIPs based on version?"
+read REPLY
+
+if [ "$REPLY" = "y" ]
+then
+	for file in MathsExpressionLiteBlender28 MathsExpressionLiteBlender27 
+	do
+		VERSION="`grep '"version":' $file/__init__.py|sed 's/.*(//'|sed 's/).*$//'|tr -d ' '|tr ',' '.'`"
+		echo "$file ($VERSION)"
+		mv $file.zip ${file}_${VERSION}.zip
+	done
+
+fi
+
+
+echo "Done"
+
+exit 0
