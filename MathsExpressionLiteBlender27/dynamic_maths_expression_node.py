@@ -14,17 +14,20 @@ from .parse_expression import Expression
 from .node_tree_tools import NodeTreeTools
 
 def get_active_node_tree(context):
-    tree = context.space_data.node_tree
+    #tree = context.space_data.node_tree
+    #
+    ## Get nodes from currently edited tree.
+    ## If user is editing a group, space_data.node_tree is still the base level (outside group).
+    ## context.active_node is in the group though, so if space_data.node_tree.nodes.active is not
+    ## the same as context.active_node, the user is in a group. (code from somewhere - can't remember where to credit)
+    ## Check recursively until we find the real active node_tree:
+    #if tree.nodes.active:
+    #    while tree.nodes.active != context.active_node:
+    #        tree = tree.nodes.active.node_tree
 
-    # Get nodes from currently edited tree.
-    # If user is editing a group, space_data.node_tree is still the base level (outside group).
-    # context.active_node is in the group though, so if space_data.node_tree.nodes.active is not
-    # the same as context.active_node, the user is in a group. (code from somewhere - can't remember where to credit)
-    # Check recursively until we find the real active node_tree:
-    if tree.nodes.active:
-        while tree.nodes.active != context.active_node:
-            tree = tree.nodes.active.node_tree
-
+    #Get the last path
+    return context.space_data.path[-1].node_tree
+                                                                                                                                                                                 
     return tree
 
 class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
@@ -82,8 +85,11 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
             return wm.invoke_props_dialog(self,width=viewWidth)
                
         else:
-            if self.mode in ('EDITWITHIN', 'UPDATE'):
-                tree = get_active_node_tree(context)
+            if self.mode in ('EDITWITHIN', 'UPDATE','REVERT'):
+                if self.node_tree_name != '':
+                    tree = bpy.data.node_groups[self.node_tree_name]
+                else:
+                    tree = get_active_node_tree(context)
             
                 expressionNode = None
                 for node in tree.nodes:
@@ -94,7 +100,8 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                     self.report({'ERROR'}, 'Selected node is not an Expression Group Node')
                     return {"CANCELLED"}
                 
-                self.expressionText = expressionNode.expressionText
+                if self.mode != 'REVERT':
+                    self.expressionText = expressionNode.expressionText
             
                 if self.mode == 'UPDATE':
                     self.execute(context)
@@ -107,6 +114,16 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
 
     def execute(self, context):
     
+        if self.mode == 'CREATE':
+            bpy.ops.ed.undo_push(message="Create new Maths Expression node group")
+        elif self.mode.startswith("EDIT"):
+            bpy.ops.ed.undo_push(message="Edit Maths Expression node group expression")
+        elif self.mode == ("REVERT"):
+            bpy.ops.ed.undo_push(message="Revert a Maths Expression node back to its previous state")
+        elif self.mode == ("UPDATE"):
+            bpy.ops.ed.undo_push(message="Update a Maths Expression node from its text block")
+        else:
+            bpy.ops.ed.undo_push(message="Maths Expression node "+str(self.MODE))
         (valid, message) = Expression.valid_expression(self.expressionText)
         
         if not valid:
@@ -115,6 +132,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
             #if 'DynamicMathsExpressionNode' in self.node_tree.nodes.keys():
             #    self.node_tree.nodes['DynamicMathsExpressionNode'].enableRevert = True
             #return {'FINISHED'} # Note : Return 'FINISHED' so as to store the (invalid) entered expression in the operator for re-use next time.
+
         else:
             self.expressionIsValid = True
             self.storedValidExpression = self.expressionText
@@ -125,7 +143,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
 
     # Manage the node's sockets, adding additional ones when needed and removing those no longer required
     def __nodeinterface_setup__(self):
-        print("Node interface setup")
+        #print("Node interface setup")
         
         # Add the output socket
         if len(self.node_tree.outputs) < 1:
@@ -191,7 +209,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
         if self.expressionIsValid:
             exprNode.storedValidExpression = self.storedValidExpression
             
-            print("About to parse expression...")
+            #print("About to parse expression...")
             operations = Expression.parse_expression(self.expressionText)
             
             #outputslot = 0
@@ -289,6 +307,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
         groupInputNode.location[0] = exprNode.location[0]                                           # Position input at left-edge of exprNode
         groupInputNode.location[1] = groupOutputNode.location[1]                                    # Position input just below exprNode
 
+        self.process_special_named_inputs()
         NodeTreeTools.arrangeBasedOnHierarchy(self.node_tree)
 
         self.set_group_inputs_defaults()
@@ -310,18 +329,106 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
         if self.resequenceInputs:
             self.resequence_inputs()
             
+    def processColorRampExpression(self, node, expr):
     
+        #Count how many terms we have received in each 'pair' of expressions
+        pairCount = 0
+        
+        #Get rid of *default* color ramp elements (ie, 0,0 and 1,1) - except the first one (since we have to leave at least 1 for the node to be valid)
+        if len(node.color_ramp.elements) > 1:
+            for element in node.color_ramp.elements[1:]:
+                node.color_ramp.elements.remove(element)
+        
+        usedFirstElement = False
+        for exprTerm in Expression.convertCommaExpressionToList(expr):
+            pairCount += 1
+            
+            if exprTerm[0] == 'value':
+                #print("COLORRAMP got expression "+exprTerm[0]+":"+str(exprTerm[1]))
+                if pairCount == 1:
+                    rampPosition = float(exprTerm[1])
+                else:
+                    #add a 'value' point in the color ramp
+                    if not usedFirstElement:
+                        element = node.color_ramp.elements[0]
+                        element.position = rampPosition
+                        usedFirstElement = True
+                    else:
+                        element = node.color_ramp.elements.new(rampPosition)
+                    element.color[0] = float(exprTerm[1])
+                    element.color[1] = float(exprTerm[1])
+                    element.color[2] = float(exprTerm[1])
+                    
+                    pairCount = 0
+                    
+            elif exprTerm[0] == 'variable':
+                var = exprTerm[1].upper()
+                
+                if var == 'BSPLINE':    #Allow alternative B-Spline indicator
+                    var = 'B_SPLINE'
+                    
+                if var in ['RGB', 'HSV', 'HSL']:
+                    node.color_ramp.color_mode = var
+                elif var in ['NEAR', 'FAR', 'CW', 'CCW']:
+                    node.color_ramp.hue_interpolation = var
+                elif var in ['EASE', 'CARDINAL', 'LINEAR', 'B_SPLINE', 'CONSTANT']:
+                    node.color_ramp.interpolation = var
+                else:
+                    raise Exception("COLORRAMP invalid term '"+var+"'")
+                    
+                #Reduce pairCount as we haven't used this term in a pair
+                pairCount -= 1
+                    
+            elif exprTerm[0] == 'combine':
+                #print("COLORRAMP got 'combine'")
+                if len(exprTerm) < 3:
+                    raise Exception("COLORRAMP combine expression too short")
+                
+                if pairCount == 1:
+                    raise Exception("COLORRAMP got 'combine' in place of a position - position must be a plain value")
+                else:
+                    col = [0.0, 0.0, 0.0]
+                    colIdx = 0
+                    for combineTerm in Expression.convertCommaExpressionToList(exprTerm[1]) + Expression.convertCommaExpressionToList(exprTerm[2]):
+                        if combineTerm[0] == 'value':
+                            #print("   Got value "+str(combineTerm[1]))
+                            col[colIdx] = float(combineTerm[1])
+                            colIdx += 1
+                        else:
+                            raise Exception("COLORRAMP combine got an unexpected expression ('"+combineTerm[0]+"')")
+                    
+                    #add a 'color' point in the color ramp
+                    if not usedFirstElement:
+                        element = node.color_ramp.elements[0]
+                        element.position = rampPosition
+                        usedFirstElement = True
+                    else:
+                        element = node.color_ramp.elements.new(rampPosition)
+                    element.color[0] = col[0]
+                    element.color[1] = col[1]
+                    element.color[2] = col[2]
+                    
+                    pairCount = 0
+                    
+            else:
+                raise Exception("COLORRAMP got an unexpected expression ('"+exprTerm[0]+"')")
+                
+            
+        if pairCount != 0:
+            raise Exception("COLORRAMP received the wrong number of arguments - must pair each 'value' with a 'color'")
+            
+        return True
     def build_nodes(self, nested_operations, to_output, output_location,depth,lastoperation=None):
         depth+=1
 
-        print("Build Nodes")
+        #print("Build Nodes")
         if len(nested_operations) == 0:
             return
         
         
         operation = nested_operations[0]
         
-        print("Build Nodes "+str(nested_operations)+" : "+str(operation))
+        #print("Build Nodes "+str(nested_operations)+" : "+str(operation))
         
         if operation == 'variable':
             #....link to 'group input'
@@ -330,7 +437,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
             #Allow variable name to include "{<default>}" suffix to set its default (so 'a{123.45}' indicates socket 'a' should default to 123.45)
             (variableName, variableDefault) = Expression.extractVariableDefault(variableName)
             if variableDefault != None:
-                print("!!Variable "+variableName+" = "+variableDefault)
+                #print("!!Variable "+variableName+" = "+variableDefault)
                 self.storeVariableDefault(variableName, variableDefault)
             
             #TODO: Move 'subscript' processing here - create SeparateXYZ node as needed and link to relevant place
@@ -376,7 +483,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
         elif operation == 'value':
             #create new 'Value' node and link to to_output
             newnode = self.node_tree.nodes.new('ShaderNodeValue')
-            print("Value = '"+str(nested_operations[1])+"'")
+            #print("Value = '"+str(nested_operations[1])+"'")
             newnode.outputs[0].default_value = float(nested_operations[1])
             self.node_tree.links.new(newnode.outputs[0],to_output)
             
@@ -396,52 +503,112 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                 
 
         else:
-            # create a new 'Maths' node
-            newnode = self.node_tree.nodes.new('ShaderNodeMath')
             
             # If operation is for additional function arguments (',') then use same operation as before (eg, for max(x,y,z,....)
             if operation == ',' and lastoperation != None:
                 operation = lastoperation
             
+            inputSocket = 0
+            outputSocket = 0
             # set the operation
             if operation == '+':
-                newnode.operation = "ADD"
+                nodetype = "ShaderNodeMath"
+                nodeop = "ADD"
             elif operation == '-':
-                newnode.operation = "SUBTRACT"
+                nodetype = "ShaderNodeMath"
+                nodeop = "SUBTRACT"
             elif operation == '*':
-                newnode.operation = "MULTIPLY"
+                nodetype = "ShaderNodeMath"
+                nodeop = "MULTIPLY"
             elif operation == '/':
-                newnode.operation = "DIVIDE"
+                nodetype = "ShaderNodeMath"
+                nodeop = "DIVIDE"
             elif operation == '**':
-                newnode.operation = "POWER"
+                nodetype = "ShaderNodeMath"
+                nodeop = "POWER"
             elif operation == 'sin':
-                newnode.operation = "SINE"
+                nodetype = "ShaderNodeMath"
+                nodeop = "SINE"
             elif operation == 'cos':
-                newnode.operation = "COSINE"
+                nodetype = "ShaderNodeMath"
+                nodeop = "COSINE"
             elif operation == 'tan':
-                newnode.operation = "TANGENT"
+                nodetype = "ShaderNodeMath"
+                nodeop = "TANGENT"
             elif operation == 'asin':
-                newnode.operation = "ARCSINE"
+                nodetype = "ShaderNodeMath"
+                nodeop = "ARCSINE"
             elif operation == 'acos':
-                newnode.operation = "ARCCOSINE"
+                nodetype = "ShaderNodeMath"
+                nodeop = "ARCCOSINE"
             elif operation == 'atan':
-                newnode.operation = "ARCTANGENT"
+                nodetype = "ShaderNodeMath"
+                nodeop = "ARCTANGENT"
             elif operation == 'min':
-                newnode.operation = "MINIMUM"
+                nodetype = "ShaderNodeMath"
+                nodeop = "MINIMUM"
             elif operation == 'max':
-                newnode.operation = "MAXIMUM"
+                nodetype = "ShaderNodeMath"
+                nodeop = "MAXIMUM"
             elif operation == '>':
-                newnode.operation = "GREATER_THAN"
+                nodetype = "ShaderNodeMath"
+                nodeop = "GREATER_THAN"
             elif operation == '<':
-                newnode.operation = "LESS_THAN"
+                nodetype = "ShaderNodeMath"
+                nodeop = "LESS_THAN"
             elif operation == 'log':
-                newnode.operation = "LOGARITHM"
+                nodetype = "ShaderNodeMath"
+                nodeop = "LOGARITHM"
             elif operation == 'round':
-                newnode.operation = "ROUND"
+                nodetype = "ShaderNodeMath"
+                nodeop = "ROUND"
             elif operation == 'mod':
-                newnode.operation = "MODULO"
+                nodetype = "ShaderNodeMath"
+                nodeop = "MODULO"
             elif operation == 'abs':
-                newnode.operation = "ABSOLUTE"
+                nodetype = "ShaderNodeMath"
+                nodeop = "ABSOLUTE"
+            elif operation == 'noise':
+                nodetype = "ShaderNodeTexNoise"
+            elif operation.startswith('musgrave'):
+                nodetype = "ShaderNodeTexMusgrave"
+                if '.' in operation:
+                    nodeop = operation.split('.')[1]
+                else:
+                    nodeop = 'fbm'
+            elif operation.startswith('voronoi'):
+                nodetype = "ShaderNodeTexVoronoi"
+                if '.' in operation:
+                    nodeop = operation.split('.')[1]
+                else:
+                    nodeop = 'intensity'
+            elif operation == 'vadd':
+                nodetype = "ShaderNodeVectorMath"
+                nodeop = 'ADD'
+            elif operation == 'vsub':
+                nodetype = "ShaderNodeVectorMath"
+                nodeop = 'SUBTRACT'
+            elif operation == 'vdot':
+                nodetype = "ShaderNodeVectorMath"
+                nodeop = 'DOT_PRODUCT'
+                outputSocket = 1
+            elif operation == 'vcross':
+                nodetype = "ShaderNodeVectorMath"
+                nodeop = 'CROSS_PRODUCT'
+            elif operation == 'vnorm':
+                nodetype = "ShaderNodeVectorMath"
+                nodeop = 'NORMALIZE'
+            elif operation == 'vmult':
+                nodetype = "ShaderNodeMixRGB"
+                nodeop = "MULTIPLY"
+                inputSocket = 1
+            elif operation == 'vdiv':
+                nodetype = "ShaderNodeMixRGB"
+                nodeop = "DIVIDE"
+                inputSocket = 1
+            elif operation == 'colorramp':
+                #First argument is input, all rest must be Value pairs defining the color points (can't use variables for colorramp)
+                nodetype = "ShaderNodeValToRGB"
             elif operation == ',':
                 #newnode.operation = "***unexpected comma***"
                 raise Exception('build_nodes : Unexpected comma')
@@ -450,7 +617,43 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                 #print("Unknown operation '"+ str(operation)+"'")
                 #newnode.operation = "Unknown"
                 raise Exception('build_nodes : Unknown operation '+str(operation))
-            
+
+            # create a new 'Maths' node
+            if nodetype == 'ShaderNodeMath' or nodetype == 'ShaderNodeVectorMath':
+                newnode = self.node_tree.nodes.new(nodetype)
+                newnode.operation = nodeop
+            elif nodetype == 'ShaderNodeMixRGB':
+                newnode = self.node_tree.nodes.new(nodetype)
+                newnode.blend_type = nodeop
+                newnode.inputs[0].default_value = 1.0   #Set Factor to 1.0
+            elif nodetype.startswith('ShaderNodeTex'):
+                newnode = self.node_tree.nodes.new(nodetype)
+                
+                if nodetype == "ShaderNodeTexMusgrave":
+                    if nodeop == "mf":
+                        newnode.musgrave_type = "MULTIFRACTAL"
+                    elif nodeop == "rmf":
+                        newnode.musgrave_type = "RIDGED_MULTIFRACTAL"
+                    elif nodeop == "hmf":
+                        newnode.musgrave_type = "HYBRID_MULTIFRACTAL"
+                    elif nodeop == "ht":
+                        newnode.musgrave_type = "HETERO_TERRAIN"
+                    else:
+                        newnode.musgrave_type = "FBM"
+                
+                elif nodetype == "ShaderNodeTexVoronoi":
+                    if nodeop == "cell":
+                        newnode.coloring = "CELLS"
+                    else:
+                        newnode.coloring = "INTENSITY"
+                        
+            elif nodetype == 'ShaderNodeValToRGB':      #ColorRamp
+                newnode = self.node_tree.nodes.new(nodetype)
+                #Use any remaining expression to populate the colors (value terms only!)
+                result = self.processColorRampExpression(newnode, nested_operations[2])
+                
+                newnode.width = 150     #Force node to be similar size to maths nodes to avoid upsetting layout
+                                
             lastoperation = operation
             
             # link output to to_output
@@ -462,44 +665,59 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
 
             # Repeat for sub-nodes
             self.build_nodes(nested_operations[1], newnode.inputs[0], newlocation,depth)
-            if len(nested_operations) > 2:
-                newlocation[1]+=1/depth
-                self.build_nodes(nested_operations[2], newnode.inputs[1], newlocation,depth,lastoperation=lastoperation)
+            if nodetype.startswith('ShaderNodeTex'):                                    
+                if len(nested_operations) > 2:
+                    socketNo = inputSocket+1
+                    nextNestedOp = nested_operations[2]
+                    while (nextNestedOp[0] == ','):
+                        newlocation[1]+=1/depth
+                        self.build_nodes(nextNestedOp[1], newnode.inputs[socketNo], newlocation,depth)
+
+                        socketNo += 1
+                        depth += 1
+                        nextNestedOp = nextNestedOp[2]
+
+                    newlocation[1]+=1/depth
+                    self.build_nodes(nextNestedOp, newnode.inputs[socketNo], newlocation,depth)
+            else:
+                if len(nested_operations) > 2 and operation != 'colorramp':     #(for colorramp we'll have already processed sub-expressions as configuration for the node)
+                    newlocation[1]+=1/depth
+                    self.build_nodes(nested_operations[2], newnode.inputs[1], newlocation,depth,lastoperation=lastoperation)
                 
     def prune_group_inputs(self):
         #run through the 'Group Input' sockets and remove any that are no longer connected
-        print("Prune Group Inputs(...)")
+        #print("Prune Group Inputs(...)")
         for output in self.node_tree.nodes['Group Input'].outputs:
             if len(output.name) > 0 and len(output.links) == 0:
-                print("Need to remove "+str(output))
+                #print("Need to remove "+str(output))
                 #self.node_tree.nodes['Group Input'].outputs.remove(output)  ### This doesn't appear to be working!!!!
                 for input in self.node_tree.inputs:
                     if input.name == output.name:
                         self.node_tree.inputs.remove(input)
-                        print("Removed "+input.name)
+                        #print("Removed "+input.name)
                 
     def prune_group_outputs(self):
         #run through the 'Group Output' sockets and remove any that are no longer connected
-        print("Prune Group Outputs(...)")
+        #print("Prune Group Outputs(...)")
         for input in self.node_tree.nodes['Group Output'].inputs:
             if len(input.name) > 0 and len(input.links) == 0:
                 for output in self.node_tree.outputs:
                     if output.name == input.name:
                         self.node_tree.outputs.remove(output)
-                        print("Removed "+output.name)
+                        #print("Removed "+output.name)
                         
     def prune_hidden_group_outputs(self):
         for output in self.node_tree.outputs:
             if output.name[0] == '_':
                 self.node_tree.outputs.remove(output)
-                print("Removed "+output.name)
+                #print("Removed "+output.name)
                 
     def prune_hidden_group_inputs(self):
         #Remove any outputs that start with '_' (these are 'hidden' outputs to be internal to the node group
         for input in self.node_tree.inputs:
             if input.name[0] == '_':
                 self.node_tree.inputs.remove(input)
-                print("Removed "+input.name)
+                #print("Removed "+input.name)
                 
     def set_group_inputs_defaults(self):
         #Process all the group inputs, setting the default for that socket
@@ -522,7 +740,104 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                     input.default_value = [0,0,0]
                 else:
                     input.default_value = 0
+
+    def process_special_named_inputs(self):
+        """Process all group inputs and replace any that have 'special' names with the assocated input node"""
+        pass
+        #TODO: Process the inputs and generate input nodes.
+        for groupinput in self.node_tree.nodes['Group Input'].outputs:
+            nodeid = None
+            if groupinput.name.lower() == 'input.generated':
+                nodeid = 'ShaderNodeTexCoord'
+                socket = 'Generated'
+            elif groupinput.name.lower() == 'input.normal':
+                nodeid = 'ShaderNodeTexCoord'
+                socket = 'Normal'
+            elif groupinput.name.lower() == 'input.uv':
+                nodeid = 'ShaderNodeTexCoord'
+                socket = 'UV'
+            elif groupinput.name.lower() == 'input.object':
+                nodeid = 'ShaderNodeTexCoord'
+                socket = 'Object'
+            elif groupinput.name.lower() == 'input.camera':
+                nodeid = 'ShaderNodeTexCoord'
+                socket = 'Camera'
+            elif groupinput.name.lower() == 'input.window':
+                nodeid = 'ShaderNodeTexCoord'
+                socket = 'Window'
+            elif groupinput.name.lower() == 'input.reflection':
+                nodeid = 'ShaderNodeTexCoord'
+                socket = 'Reflection'
+            elif groupinput.name.lower() == 'particle.index':
+                nodeid = 'ShaderNodeParticleInfo'
+                socket = 'Index'
+            elif groupinput.name.lower() == 'particle.age':
+                nodeid = 'ShaderNodeParticleInfo'
+                socket = 'Age'
+            elif groupinput.name.lower() == 'particle.lifetime':
+                nodeid = 'ShaderNodeParticleInfo'
+                socket = 'Lifetime'
+            elif groupinput.name.lower() == 'particle.location':
+                nodeid = 'ShaderNodeParticleInfo'
+                socket = 'Location'
+            elif groupinput.name.lower() == 'particle.size':
+                nodeid = 'ShaderNodeParticleInfo'
+                socket = 'Size'
+            elif groupinput.name.lower() == 'particle.velocity':
+                nodeid = 'ShaderNodeParticleInfo'
+                socket = 'Velocity'
+            elif groupinput.name.lower() == 'particle.angularvelocity':
+                nodeid = 'ShaderNodeParticleInfo'
+                socket = 'Angular Velocity'
+            elif groupinput.name.lower() == 'particle.random':
+                nodeid = 'ShaderNodeParticleInfo'
+                socket = 'Random'
+            elif groupinput.name.lower() == 'object.location':
+                nodeid = 'ShaderNodeObjectInfo'
+                socket = 'Location'
+            elif groupinput.name.lower() == 'object.index':
+                nodeid = 'ShaderNodeObjectInfo'
+                socket = 'Object Index'
+            elif groupinput.name.lower() == 'object.material':
+                nodeid = 'ShaderNodeObjectInfo'
+                socket = 'Material Index'
+            elif groupinput.name.lower() == 'object.random':
+                nodeid = 'ShaderNodeObjectInfo'
+                socket = 'Random'
+            elif groupinput.name.lower() == 'geom.position':
+                nodeid = 'ShaderNodeNewGeometry'
+                socket = 'Position'
+            elif groupinput.name.lower() == 'geom.normal':
+                nodeid = 'ShaderNodeNewGeometry'
+                socket = 'Normal'
+            elif groupinput.name.lower() == 'geom.truenormal':
+                nodeid = 'ShaderNodeNewGeometry'
+                socket = 'True Normal'
+            elif groupinput.name.lower() == 'geom.tangent':
+                nodeid = 'ShaderNodeNewGeometry'
+                socket = 'Tangent'
+            elif groupinput.name.lower() == 'geom.incoming':
+                nodeid = 'ShaderNodeNewGeometry'
+                socket = 'Incoming'
+            elif groupinput.name.lower() == 'geom.parametric':
+                nodeid = 'ShaderNodeNewGeometry'
+                socket = 'Parametric'
+            elif groupinput.name.lower() == 'geom.backfacing':
+                nodeid = 'ShaderNodeNewGeometry'
+                socket = 'Backfacing'
+            elif groupinput.name.lower() == 'geom.pointiness':
+                nodeid = 'ShaderNodeNewGeometry'
+                socket = 'Pointiness'
                 
+            #TODO: Add Camera Data, Light Path, Hair Info
+            #TODO: Other 'input' nodes as functions?
+                
+            if nodeid != None:
+                
+                node = self.node_tree.nodes.new(nodeid)
+                for groupinputlink in groupinput.links:
+                    self.node_tree.links.new(node.outputs[socket],groupinputlink.to_socket)
+                 
             
     def resequence_inputs(self):
         # Resequence the inputs based on label length and content
@@ -536,10 +851,10 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                 compareSocketName = inputs[compareSocketNo].name
                 
                 if self.resequence_inputs_comparator(thisSocketName, compareSocketName) < 0 :
-                    self.report({'INFO'},"Comparing to the one above")
+                    #self.report({'INFO'},"Comparing to the one above")
                     compareSocketNo = compareSocketNo - 1
                 else:
-                    self.report({'INFO'},"Stopped search")
+                    #self.report({'INFO'},"Stopped search")
                     break
             
             if (compareSocketNo+1) == socketNo:
@@ -548,7 +863,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
             else:
                 #move it - move socketNo to position compareSocketNo+1
                 inputs.move(socketNo, compareSocketNo+1);
-                self.report({'INFO'},"Moved socket "+str(socketNo)+" to position "+str(compareSocketNo+1))
+                #self.report({'INFO'},"Moved socket "+str(socketNo)+" to position "+str(compareSocketNo+1))
                 
         
     #Compare 'first' with 'second'. Short values will always be before "long" ones (>2 chars)
@@ -558,7 +873,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
     #(eg, dx,dy,dz,x,x2,y,y2,z,z2,amplitude,scale,width)
     def resequence_inputs_comparator(self, first, second):
   
-        self.report({'INFO'},"Compare '"+first+"' with '"+second+"'")
+        #self.report({'INFO'},"Compare '"+first+"' with '"+second+"'")
   
         # strip trailing numerics to create firstStripped, secondStripped
         firstStripped = self.resequence_inputs_strip_numerics(first)
@@ -568,23 +883,23 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
         
         if len(firstStripped)<=2 and len(secondStripped)>2:
             #'first' is short while 'second' is long
-            self.report({'INFO'},"Less")
+            #self.report({'INFO'},"Less")
             return -1   #Less than
             
         if len(firstStripped)>2 and len(secondStripped)<=2:
             #'first' is long while 'second' is short
-            self.report({'INFO'},"Greater")
+            #self.report({'INFO'},"Greater")
             return 1    #Greater than
                 
         #'first' is similar length to 'second' so simply compare
         if first < second:
-            self.report({'INFO'},"Less2")
+            #self.report({'INFO'},"Less2")
             return -1    #Less than
         if first > second:
-            self.report({'INFO'},"Greater2")
+            #self.report({'INFO'},"Greater2")
             return 1   #Greater than
             
-        self.report({'INFO'},"Same")
+        #self.report({'INFO'},"Same")
         return 0 #Same
         
     def resequence_inputs_strip_numerics(self, s):
@@ -596,7 +911,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
         node_active = context.active_node
         node_selected = context.selected_nodes
 
-        print(context)
+        #print(context)
         if context.space_data.type == 'NODE_EDITOR' and context.space_data.node_tree is not None:
             
             if self.mode == 'CREATE':
@@ -614,11 +929,15 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
                     node.select = False
                 groupnode.select = True
                 
+                #Make it the 'active' object
+                get_active_node_tree(context).nodes.active = groupnode
+
                 # TODO: Put it in 'grab' mode?
-                #...
                 
                 self.node_tree = groupnode.node_tree
                 self.groupnode = groupnode
+
+
             
             else:
                 if self.mode == 'EDIT':
@@ -649,7 +968,7 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
             self.__nodetree_setup__()
         except Exception as exception:
             self.report({'ERROR'},'Build of node tree failed : '+str(exception))
-            
+            traceback.print_exc()
         #Activate the actual output node and remove the dummy one
         self.node_tree.nodes["Group Output"].is_active_output = True
         dummyGroupOutputNode.is_active_output = False
@@ -660,7 +979,16 @@ class _DynamicMathsExpression_Operator_common(bpy.types.Operator):
         
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Maths Expression")
+        split = layout.split()
+        split.label(text="Maths Expression (Lite)")
+
+        #TODO: Get the documentation window properly working and popping out to seperate window
+        documentationFile = os.path.join(os.path.dirname(os.path.abspath(__file__)),"documentation.txt")
+        if os.path.isfile(documentationFile): # and not "Node Expressions Documentation" in bpy.data.texts.keys():
+            split.operator(operator="node.node_dynamic_maths_expression_showdocumentation",text="View Documentation")
+        upgradeFile = os.path.join(os.path.dirname(os.path.abspath(__file__)),"upgrade.txt")
+        if os.path.isfile(upgradeFile):
+            split.operator(operator="node.node_dynamic_maths_expression_showupgrade",text="How to upgrade")
 
         if self.mode == 'EDIT':
             row = layout.row()
@@ -732,7 +1060,8 @@ class DynamicMathsExpressionEditWithin_Operator(_DynamicMathsExpression_Operator
     pruneSockets = bpy.props.BoolProperty(name='Prune Inputs/Outputs', description='Automatically remove unused sockets')
     resequenceInputs = bpy.props.BoolProperty(name='Auto-sequence Inputs', description='Automatically resequence input sockets')
     expressionText = bpy.props.StringProperty(description='Enter the expression', name='Expression')
-    
+    node_tree_name = bpy.props.StringProperty(name='Currently active node tree')
+
     def __init__(self):
         super().__init__()
 
@@ -751,6 +1080,7 @@ class DynamicMathsExpressionRevert_Operator(_DynamicMathsExpression_Operator_com
     pruneSockets = bpy.props.BoolProperty(name='Prune Inputs/Outputs', description='Automatically remove unused sockets')
     resequenceInputs = bpy.props.BoolProperty(name='Auto-sequence Inputs', description='Automatically resequence input sockets')
     expressionText = bpy.props.StringProperty(description='Enter the expression', name='Expression')
+    node_tree_name = bpy.props.StringProperty(name='Currently active node tree')
 
     def __init__(self):
         super().__init__()
@@ -765,6 +1095,120 @@ class DynamicMathsExpressionRevert_Operator(_DynamicMathsExpression_Operator_com
         
         #trigger re-build - continue with execution of the operator
         
+class DynamicMathsExpressionShowDocumentation_Operator(bpy.types.Operator):
+    """Split the current editor window and show the documentation"""
+    
+    bl_idname = "node.node_dynamic_maths_expression_showdocumentation"
+    bl_label = "Node Group - Dynamic Maths Expression(Show Documentation)"
+    bl_space_type = 'NODE_EDITOR'
+    label = 'Show Documentation'
+    bl_options = {'INTERNAL',}
+
+    def __init__(self):
+        #Do nothing
+        pass
+        
+    def execute(self, context):
+        pass
+        bpy.ops.screen.area_split(direction='VERTICAL', factor=0.5)
+        #bpy.ops.screen.new()  #TODO: Create new window for the new area.
+        
+        otherarea = context.area                  #Instead of using the new one, use original (the right-hand split)
+        newarea = context.screen.areas[-1]      #Assumed it's the last one in the stack (which it should be)
+        
+        newarea.type = 'TEXT_EDITOR'
+        
+        if "Node Expressions Documentation" in bpy.data.texts.keys():
+            textblock = bpy.data.texts["Node Expressions Documentation"]
+        else:
+            textblock = bpy.data.texts.new("Node Expressions Documentation")
+        
+            documentationFile = os.path.join(os.path.dirname(os.path.abspath(__file__)),"documentation.txt")
+            if os.path.isfile(documentationFile):
+                textblock.from_string(open(documentationFile).read())
+            else:
+                textblock.from_string("*** Failed to load the documentation file ***")
+
+        editor = newarea.spaces[0]
+        editor.text = textblock
+        
+        editor.top = 1
+        bpy.ops.text.jump({"area":newarea}, line=1)
+        bpy.ops.text.move({"area":newarea}, type="LINE_BEGIN")
+        #TODO: Disable button if already visible
+        #TODO: Don't re-load if already loaded (just re-show)
+        
+        #bpy.ops.screen.area_dupli('INVOKE_DEFAULT')
+        
+        #Merge areas as if dragged top-right widget to right
+        #print("BeforeMerge:"+str(otherarea.x)+","+str(otherarea.y)+","+str(newarea.x)+","+str(newarea.y))
+        #print("BeforeDimensions:"+str(otherarea.width)+","+str(otherarea.height)+","+str(newarea.width)+","+str(newarea.height))
+        #bpy.ops.screen.area_join({"area":otherarea}, min_x=otherarea.x, min_y=otherarea.y, max_x=newarea.x, max_y=newarea.y)
+        #bpy.ops.screen.area_join({"area":newarea}, min_x=otherarea.x, min_y=newarea.y, max_x=newarea.x, max_y=newarea.y)
+        #bpy.ops.screen.area_join({"area":otherarea}, min_x=0, min_y=0, max_x=-50, max_y=-50)
+        #bpy.ops.screen.area_join({"area":newarea}, min_x=newarea.x, min_y=newarea.y, max_x=newarea.x+100, max_y=newarea.y)
+        #print("AfterMerge:"+str(otherarea.x)+","+str(otherarea.y)+","+str(newarea.x)+","+str(newarea.y))
+        #print("AfterDimensions:"+str(otherarea.width)+","+str(otherarea.height)+","+str(newarea.width)+","+str(newarea.height))
+        
+        return {'FINISHED'}
+    
+class DynamicMathsExpressionShowUpgrade_Operator(bpy.types.Operator):
+    """Split the current editor window and show the upgrade information"""
+    
+    bl_idname = "node.node_dynamic_maths_expression_showupgrade"
+    bl_label = "Node Group - Dynamic Maths Expression(Show Upgrade Info)"
+    bl_space_type = 'NODE_EDITOR'
+    label = 'Show Upgrade Info'
+    bl_options = {'INTERNAL',}
+
+    def __init__(self):
+        #Do nothing
+        pass
+        
+    def execute(self, context):
+        pass
+        bpy.ops.screen.area_split(direction='VERTICAL', factor=0.5)
+        #bpy.ops.screen.new()  #TODO: Create new window for the new area.
+        
+        otherarea = context.area                  #Instead of using the new one, use original (the right-hand split)
+        newarea = context.screen.areas[-1]      #Assumed it's the last one in the stack (which it should be)
+        
+        newarea.type = 'TEXT_EDITOR'
+        
+        if "Node Expressions Upgrade" in bpy.data.texts.keys():
+            textblock = bpy.data.texts["Node Expressions Upgrade"]
+        else:
+            textblock = bpy.data.texts.new("Node Expressions Upgrade")
+        
+            upgradeFile = os.path.join(os.path.dirname(os.path.abspath(__file__)),"upgrade.txt")
+            if os.path.isfile(upgradeFile):
+                textblock.from_string(open(upgradeFile).read())
+            else:
+                textblock.from_string("*** Failed to load the upgrade file ***")
+
+        editor = newarea.spaces[0]
+        editor.text = textblock
+        
+        editor.top = 1
+        bpy.ops.text.jump({"area":newarea}, line=1)
+        bpy.ops.text.move({"area":newarea}, type="LINE_BEGIN")
+        #TODO: Disable button if already visible
+        #TODO: Don't re-load if already loaded (just re-show)
+        
+        #bpy.ops.screen.area_dupli('INVOKE_DEFAULT')
+        
+        #Merge areas as if dragged top-right widget to right
+        #print("BeforeMerge:"+str(otherarea.x)+","+str(otherarea.y)+","+str(newarea.x)+","+str(newarea.y))
+        #print("BeforeDimensions:"+str(otherarea.width)+","+str(otherarea.height)+","+str(newarea.width)+","+str(newarea.height))
+        #bpy.ops.screen.area_join({"area":otherarea}, min_x=otherarea.x, min_y=otherarea.y, max_x=newarea.x, max_y=newarea.y)
+        #bpy.ops.screen.area_join({"area":newarea}, min_x=otherarea.x, min_y=newarea.y, max_x=newarea.x, max_y=newarea.y)
+        #bpy.ops.screen.area_join({"area":otherarea}, min_x=0, min_y=0, max_x=-50, max_y=-50)
+        #bpy.ops.screen.area_join({"area":newarea}, min_x=newarea.x, min_y=newarea.y, max_x=newarea.x+100, max_y=newarea.y)
+        #print("AfterMerge:"+str(otherarea.x)+","+str(otherarea.y)+","+str(newarea.x)+","+str(newarea.y))
+        #print("AfterDimensions:"+str(otherarea.width)+","+str(otherarea.height)+","+str(newarea.width)+","+str(newarea.height))
+        
+        return {'FINISHED'}
+    
     
 class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
     """Node to hold the expression text and provide Edit button"""
@@ -778,7 +1222,7 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
 
     # Setup the node - setup the node tree and add the group Input and Output nodes
     def init(self, context):
-        print("Node Init")
+        #print("Node Init")
         self.node_tree=bpy.data.node_groups.new(self.bl_name, 'ShaderNodeTree')
         if hasattr(self.node_tree, 'is_hidden'):
             self.node_tree.is_hidden=False
@@ -800,11 +1244,11 @@ class DynamicMathsExpressionNode(bpy.types.NodeCustomGroup):
         row=layout.row()
         #row.label(text='Saved Expression: '+str(self.storedValidExpression))
         #row=layout.row()
-        row.operator('node.node_dynamic_maths_expression_editwithin', text='Edit')
+        row.operator('node.node_dynamic_maths_expression_editwithin', text='Edit').node_tree_name = self.id_data.name; #Get group this node resides in
 
         layout.alert = self.enableRevert
         if self.enableRevert and self.storedValidExpression != "":
             row=layout.row()
-            row.operator('node.node_dynamic_maths_expression_revert', text='Node is invalid! - Click to Revert')
+            row.operator('node.node_dynamic_maths_expression_revert', text='Node is invalid! - Click to Revert').node_tree_name = self.id_data.name; #Get group this node resides in
             
         

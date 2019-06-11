@@ -5,6 +5,7 @@
 ################################################### History ######################################################
 # 0.01  09/06/2018 : Initial version based on function originally in DynamicMathsExpressionNode class
 # 0.02  11/06/2018 : Enhanced to provide simple hierarchy layout
+# 0.03  10/06/2019 : Implement spacingFactor for hierarchical layout
 ##################################################################################################################
 
 
@@ -107,7 +108,7 @@ class NodeTreeTools():
             node.location[1] += forces[node.name][1]*5
             
     _node_levels = []
-    def arrangeBasedOnHierarchy(node_tree):
+    def arrangeBasedOnHierarchy(node_tree, spacingFactor=1.5):
 
         del(NodeTreeTools._node_levels[:])
     
@@ -122,7 +123,7 @@ class NodeTreeTools():
         maxNodeWidth = -1
         maxNodeHeight = -1
         for rec in NodeTreeTools._node_levels:
-            print("NodeLevel : "+str(rec))
+            #print("NodeLevel : "+str(rec))
             if rec[1]>maxLevel:
                 maxLevel = rec[1]
             node = node_tree.nodes[rec[0]]
@@ -136,7 +137,7 @@ class NodeTreeTools():
             for rec in NodeTreeTools._node_levels:
                 if rec[1] == l:
                     node = node_tree.nodes[rec[0]]
-                    node.location[0] = (maxLevel/2 - l) * maxNodeWidth*2
+                    node.location[0] = (maxLevel/2 - l) * maxNodeWidth*spacingFactor
                     node.location[1] = y
                     y -= maxNodeHeight*2
                 

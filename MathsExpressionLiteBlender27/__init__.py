@@ -4,12 +4,15 @@
 ################################################### History ######################################################
 # 1.00 09/04/2019 : Initial version
 # 1.01 24/04/2019 : Fixes to handling of operator precedence and negative terms
+# 1.02 10/06/2019 : Include latest 'parse_expression.py' from 'full version' add-on
+#                   Include bug fixes, documentation operator and all node types from 'full' version.
+# 1.10 11/06/2019 : Minor bug fixes, include lite-specific documentation and 'upgrade' instructions.
 #################################################################################################################
 
 bl_info = {  
  "name": "Dynamic Maths Expression(Lite)",  
  "author": "Rich Sedman",  
- "version": (1, 1),  
+ "version": (1, 10),  
  "blender": (2, 76, 0),  
  "location": "Node Editor > Add",  
  "description": "Provide an option to create a new group from a typed maths expression (Lite).",  
@@ -20,7 +23,7 @@ bl_info = {
 
 import bpy
 
-from .dynamic_maths_expression_node import DynamicMathsExpression_Operator, DynamicMathsExpressionEdit_Operator, DynamicMathsExpressionEditWithin_Operator, DynamicMathsExpressionRevert_Operator, DynamicMathsExpressionNode
+from .dynamic_maths_expression_node import DynamicMathsExpression_Operator, DynamicMathsExpressionEdit_Operator, DynamicMathsExpressionEditWithin_Operator, DynamicMathsExpressionRevert_Operator, DynamicMathsExpressionShowDocumentation_Operator, DynamicMathsExpressionShowUpgrade_Operator, DynamicMathsExpressionNode
 
 from nodeitems_utils import NodeItem, register_node_categories, unregister_node_categories
 
@@ -35,7 +38,7 @@ def menu_draw(self, context):
 bpy.types.NODE_MT_add.append(menu_draw)
 #TODO : Need to add it to Add/Group rather than Add
 
-classes = ( DynamicMathsExpression_Operator, DynamicMathsExpressionEdit_Operator, DynamicMathsExpressionEditWithin_Operator, DynamicMathsExpressionRevert_Operator , DynamicMathsExpressionNode)
+classes = ( DynamicMathsExpression_Operator, DynamicMathsExpressionEdit_Operator, DynamicMathsExpressionEditWithin_Operator, DynamicMathsExpressionRevert_Operator, DynamicMathsExpressionShowDocumentation_Operator, DynamicMathsExpressionShowUpgrade_Operator, DynamicMathsExpressionNode)
 
 def register():
     from bpy.utils import register_class

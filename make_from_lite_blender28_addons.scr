@@ -26,6 +26,9 @@ then
 		#sleep 1
 	done
 
+   	cp "$BLENDER28SOURCE/documentation.txt" MathsExpressionLiteBlender28 
+    cp "$BLENDER28SOURCE/upgrade.txt" MathsExpressionLiteBlender28 
+
 fi
 
 function convert_to_27()

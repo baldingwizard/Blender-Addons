@@ -1,0 +1,24 @@
+Node Expressions Upgrade
+========================
+
+The Node Expressions add-on is provided in two versions - 'Lite' and 'Full'.
+
+The 'Lite' version is sufficient for the quick creation of very simple expressions
+(such as 'a+b+c' or 'mod(x, 1/Scale)*Scale') but the 'Full' version provides additional
+functionality makes working with much more complicated expressions a breeze.
+
+To obtain the 'full' version, purchase through Blender Market at :
+    
+    https://blendermarket.com/products/node-expressions
+
+
+Alternatively, send GBP 4.00 (or equivalent value in another currency) via paypal to :
+
+    https://www.paypal.me/BaldingWizard
+    
+ and I'll email the latest version (for future updates, simply send me an email from the
+ same address as your paypal payment and I'll send the the latest update).
+ 
+ 
+To install the upgrade, simply uninstall (or disable) the 'lite' version and use the 
+'install from zip' option within Blender to install the 'full' version from the 'zip' file.
