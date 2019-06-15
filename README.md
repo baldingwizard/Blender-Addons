@@ -18,10 +18,6 @@ Adds an option ('Particles to Nurbs') to the Add/Curve menu in the 3D View to co
 * Download from https://github.com/baldingwizard/Blender-Addons/wiki/Particles-To-Path
 
 
-* Blender 2.79 : https://github.com/baldingwizard/Blender-Addons/raw/master/ParticlesToPath279.zip
-* Blender 2.8 : https://github.com/baldingwizard/Blender-Addons/raw/master/ParticlesToPath28.zip
-
-
 Vertex Color Blend
 ==================
 Adds a Blend Vertex Colors option to the Paint option in Vertex Paint mode. This uses a Vertex Group to set 'fixed' colors in the mesh and smears those colors over the mesh.

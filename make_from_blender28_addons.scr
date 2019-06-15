@@ -1,0 +1,141 @@
+echo "This will overwrite 'local' copies and those in Blender 2.7!!"
+echo "Are you sure? (y=continue)"
+
+read REPLY
+
+if [ "$REPLY" != 'y' ]
+then
+	echo "Aborted!"
+	exit 1
+fi
+
+
+#=====================================================================================================================
+function convert_to_27()
+{
+
+    SOURCEDIR=$1
+    DESTDIR=$2
+
+    ZIP="c:/program files/7-zip/7z.exe"
+
+    mv "$DESTDIR" "../old/$DESTDIR.`date +%Y%m%d.%H%M%S`"
+
+    if [ "$?" -ne 0 ]
+    then
+        echo "Failed to backup old version"
+        echo "Press ENTER to continue"
+        read REPLY
+    fi
+
+    mkdir "$DESTDIR"
+
+    if [ "$?" -ne 0 ]
+    then
+        echo "Failed to create new empty directory"
+        exit 3
+    fi
+
+    for file in `ls -1 $SOURCEDIR`
+    do
+        if [ ! -z "`echo $file|grep '\.py$'`" ]
+        then
+            #It's a 'py' file
+
+            #Convert 'XXXX[n]: bpy.props...' to 'XXXX = bpy.props...'
+            cat $SOURCEDIR/$file |sed 's/\([a-z][0-9]*\): bpy.prop/\1 = bpy.prop/' |sed 's/2, 80, 0/2, 76, 0/' >$DESTDIR/$file
+        else
+            #Copy it
+            cp -rfd "$SOURCEDIR"/"$file" "$DESTDIR"
+        fi
+    done
+}
+#=====================================================================================================================
+
+for addon in MathsExpressionLiteBlender Smoke2EXR
+do
+
+    BLENDER28SOURCE="C:/Users/Rich/AppData/Roaming/Blender Foundation/Blender/2.80/scripts/addons/${addon}28"
+    echo -e "\n\nAdd-on '$addon' : Copy from '$BLENDER28SOURCE' and overwrite 'local' copy?"
+
+    read REPLY
+
+    if [ "$REPLY" = "y" ]
+    then
+        echo "Copying..."
+        sleep 2
+
+        if [ ! -d "${addon}28" ]
+        then
+            mkdir "${addon}28"
+        fi
+
+        for file in `ls -1 "$BLENDER28SOURCE"|grep '\.py$'`
+        do
+            cp "$BLENDER28SOURCE/$file" "${addon}28" 
+        done
+
+        for file in `ls -1 "$BLENDER28SOURCE"|grep '\.txt$'`
+        do
+            cp "$BLENDER28SOURCE/$file" "${addon}28" 
+        done
+    else
+        continue
+    fi
+
+    echo -e "\n\nConvert '$addon' 28 version to 27?"
+    read REPLY
+
+    if [ "$REPLY" = "y" ]
+    then
+        convert_to_27 "${addon}28" "${addon}27"
+    fi
+
+
+    echo -e "\n\nRe-build '$addon' ZIP files?"
+    read REPLY
+
+    if [ "$REPLY" = "y" ]
+    then
+        echo "Rebuilding..."
+
+        for module in "${addon}27" "${addon}28"
+        do
+            echo "$module"
+            rm -f "$module.zip"
+            "$ZIP" a "$module.zip" $module
+        done
+
+        ls -l *zip
+
+    fi
+
+    echo -e "\n\nUnpack '$addon' to Blender 2.79 addons?"
+    read REPLY
+
+    if [ "$REPLY" = "y" ]
+    then
+        # Unzip to 2.79 blender addons, with overwrite mode of 'all'
+        "$ZIP" x -aoa -o"c:/Users/rich/AppData/Roaming/Blender Foundation/Blender/2.79/scripts/addons" "${addon}27.zip"
+    fi
+
+    echo -e "\n\nRename ZIPs based on version?"
+    read REPLY
+
+    if [ "$REPLY" = "y" ]
+    then
+        for file in ${addon}28 ${addon}27 
+        do
+            VERSION="`grep '"version":' $file/__init__.py|sed 's/.*(//'|sed 's/).*$//'|tr -d ' '|tr ',' '.'`"
+            echo "$file ($VERSION)"
+            mv $file.zip ${file}_${VERSION}.zip
+        done
+
+    fi
+
+    echo "Done"
+
+done
+
+
+exit 0
