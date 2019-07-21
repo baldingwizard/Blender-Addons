@@ -7,12 +7,13 @@
 # 1.02 10/06/2019 : Include latest 'parse_expression.py' from 'full version' add-on
 #                   Include bug fixes, documentation operator and all node types from 'full' version.
 # 1.10 11/06/2019 : Minor bug fixes, include lite-specific documentation and 'upgrade' instructions.
+# 1.11 21/07/2019 : Amend documentation to fix 'special variables' prefixes. Also, amend upgrade notes for blog url
 #################################################################################################################
 
 bl_info = {  
  "name": "Dynamic Maths Expression(Lite)",  
  "author": "Rich Sedman",  
- "version": (1, 10),  
+ "version": (1, 11),  
  "blender": (2, 80, 0),  
  "location": "Node Editor > Add",  
  "description": "Provide an option to create a new group from a typed maths expression (Lite).",  

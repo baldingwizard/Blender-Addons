@@ -1,7 +1,9 @@
 Node Expressions Upgrade
 ========================
 
-The Node Expressions add-on is provided in two versions - 'Lite' and 'Full'.
+The Node Expressions add-on is provided in two versions - 'Lite' and 'Full' :
+
+    https://baldingwizard.wixsite.com/blog/node-expressions
 
 The 'Lite' version is sufficient for the quick creation of very simple expressions
 (such as 'a+b+c' or 'mod(x, 1/Scale)*Scale') but the 'Full' version provides additional

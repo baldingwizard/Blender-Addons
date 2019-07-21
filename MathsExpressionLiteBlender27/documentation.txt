@@ -204,38 +204,38 @@ Geometry :
 
     Variable            Node                    Socket
     ------------------- ----------------------- -------------
-    Input.Position      Geometry                Position
-    Input.Normal        Geometry                Normal
-    Input.TrueNormal    Geometry                True Normal
-    Input.Tangent       Geometry                Tangent
-    Input.Incoming      Geometry                Incoming
-    Input.Parametric    Geometry                Parametric
-    Input.Backfacing    Geometry                Backfacing
-    Input.Pointiness    Geometry                Pointiness
+    Geom.Position       Geometry                Position
+    Geom.Normal         Geometry                Normal
+    Geom.TrueNormal     Geometry                True Normal
+    Geom.Tangent        Geometry                Tangent
+    Geom.Incoming       Geometry                Incoming
+    Geom.Parametric     Geometry                Parametric
+    Geom.Backfacing     Geometry                Backfacing
+    Geom.Pointiness     Geometry                Pointiness
 
 
 Object Info :
 
     Variable            Node                    Socket
     ------------------- ----------------------- -------------
-    Input.Index         Object Info             Index
-    Input.Material      Object Info             Material Index
-    Input.Random        Object Info             Random
-    Input.Location      Object Info             Location
+    Object.Index        Object Info             Index
+    Object.Material     Object Info             Material Index
+    Object.Random       Object Info             Random
+    Object.Location     Object Info             Location
 
 
 Particle Info :
 
-    Variable                Node                Socket
-    ----------------------- ------------------- -------------
-     Input.Index            Particle Info       Index
-     Input.Age              Particle Info       Age
-     Input.Lifetime         Particle Info       Lifetime
-     Input.Location         Particle Info       Location
-     Input.Size             Particle Info       Size
-     Input.Velocity         Particle Info       Velocity
-     Input.AngularVelocity  Particle Info       Angular Velocity
-     Input.Random           Particle Info       Random
+    Variable                   Node                Socket
+    -------------------------- ------------------- -------------
+     Particle.Index            Particle Info       Index
+     Particle.Age              Particle Info       Age
+     Particle.Lifetime         Particle Info       Lifetime
+     Particle.Location         Particle Info       Location
+     Particle.Size             Particle Info       Size
+     Particle.Velocity         Particle Info       Velocity
+     Particle.AngularVelocity  Particle Info       Angular Velocity
+     Particle.Random           Particle Info       Random
 
 
 Editing Expressions

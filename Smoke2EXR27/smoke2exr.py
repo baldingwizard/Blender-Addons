@@ -1,5 +1,9 @@
 # Script to convert a smoke simulation PointCache2 into an OpenEXR image
 
+# RAS 26/06/2019 : Added 'pack' and 'use_fake_user' for newly generated images
+
+#TODO: multiple frames to one exr. Also, image compression.
+
 # Supports PointCache smoke version 1.04
 #
 # Smoke pointcache format :
@@ -399,6 +403,11 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno):
         tcv = read_block(f, size)
         tcw = read_block(f, size)
 
+        #TODO: Get HIRES working correctly
+        print("WARNING: HIRES not working - disabled HIRES output")
+        hires_rgb_b = None
+        hires_flame = None
+
         if rgb_b != None:
             build_exr_from_buffers(gen_filename("smoke",oPattern, oframeno), (res_x, res_y, res_z), rgb_r, rgb_g, rgb_b, None)
         else:
@@ -406,8 +415,8 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno):
 
         if hires_rgb_b != None:
             build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_rgb_r, hires_rgb_g, hires_rgb_b, None)
-        else:
-            build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x, res_y, res_z), density, density, density, None)
+        #else:
+        #    build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x, res_y, res_z), density, density, density, None)
 
         build_exr_from_buffers(gen_filename("velocity",oPattern, oframeno), (res_x, res_y, res_z), vx, vy, vz, None)
 
@@ -446,6 +455,7 @@ def read_block(f, size):
                 buffer = f.read(compsize)
                 destbuffer = bytearray(size)
                 (error, result_index) = Lzo_Codec.Lzo1x_Decompress(buffer, 0, compsize, destbuffer, 0)
+                print("Uncompressed from "+str(compsize)+" to a buffer of "+str(size)+" result_index = "+str(result_index))
                 return destbuffer
             
             else:
@@ -469,7 +479,9 @@ def build_exr_from_buffers(filename, dimensions, bufferR, bufferG, bufferB, buff
     for x in range(0,width):
         for y in range(0,height):
             pixels[y*width+x] = [0.0,0.0,0.0,0.0]
-
+            
+    print("File '"+filename+"', Dimensions = ("+str(dimensions[0])+","+str(dimensions[1])+","+str(dimensions[2])+")")
+    
     for x in range(0,dimensions[0]):
         #print("Processing "+str(x))
         for y in range(0,dimensions[1]):
@@ -507,6 +519,7 @@ def build_exr_from_buffers(filename, dimensions, bufferR, bufferG, bufferB, buff
     # Save image to temporary file and pack it (from answer by @sambler)
     scn = bpy.data.scenes.new('img_settings')
     scn.render.image_settings.file_format = 'OPEN_EXR'
+    scn.render.image_settings.exr_codec = 'ZIP'
     scn.render.image_settings.color_mode = 'RGBA'
     scn.render.image_settings.color_depth = '32'
     img_path = bpy.path.abspath('//')
@@ -518,6 +531,14 @@ def build_exr_from_buffers(filename, dimensions, bufferR, bufferG, bufferB, buff
     except:
         # Remove the scene, (Blender 2.78+)
         bpy.data.scenes.remove(scn, do_unlink=True)
+        
+    #Pack the images (needs to be saved and re-opened)
+    #bpy.data.images.remove(image)
+    #bpy.ops.image.open(filepath=img_file)
+    #image = bpy.data.images[img_file]
+    image.pack()
+    #os.remove(img_path+img_file)
+    image.use_fake_user = True
 
 class Smoke2EXR_Operator(bpy.types.Operator):
     """Convert a smoke domain into an EXR image file"""
@@ -534,7 +555,6 @@ class Smoke2EXR_Operator(bpy.types.Operator):
 
     def __init__(self):
         super().__init__()
-        frameNo = 1
         
 
     @classmethod
@@ -545,6 +565,8 @@ class Smoke2EXR_Operator(bpy.types.Operator):
 
     def invoke(self, context, event):
         wm = context.window_manager
+        
+        self.frameNo = context.scene.frame_current
         
         #viewWidth = bpy.context.area.width * 0.8
         #
@@ -581,10 +603,12 @@ class Smoke2EXR_Operator(bpy.types.Operator):
         smokeCacheName = str(self.smokeCacheName)
         
         if len(smokeCacheName) == 0:
-            smokeCacheName = 'smoke'    #Default to 'smoke' if the cache hasn't got a name
+            self.report({'ERROR'}, "Smoke cache must be baked to a *named* cache.")
+            return {"CANCELLED"}
+            #TODO: Pickup the "random" generated name if we don't find an explicit name
             
         cachefile = bpy.path.abspath("//blendcache_%s/%s_%06i_00.bphys" % (bpy.path.basename(bpy.context.blend_data.filepath[:-6]),smokeCacheName,self.frameNo))
-        convert_pointcache_volume_to_exr(cachefile, "output/%s_%06i", self.frameNo)
+        convert_pointcache_volume_to_exr(cachefile, "smoke2exr_%s_%06i", self.frameNo)
         return {'FINISHED'}
     
 
