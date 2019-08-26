@@ -559,11 +559,15 @@ def build_exr_from_buffers(filename, dimensions, bufferR, bufferG, bufferB, buff
         bpy.data.scenes.remove(scn, do_unlink=True)
         
     #Pack the images (needs to be saved and re-opened)
-    #bpy.data.images.remove(image)
-    #bpy.ops.image.open(filepath=img_file)
-    #image = bpy.data.images[img_file]
+    if bpy.app.version_string.startswith('2.79'):
+        bpy.data.images.remove(image)
+        bpy.ops.image.open(filepath=img_path+img_file)
+        image = bpy.data.images[img_file]
+        
     image.pack()
-    #os.remove(img_path+img_file)
+    if bpy.app.version_string.startswith('2.79'):
+        os.remove(img_path+img_file)
+    
     image.use_fake_user = True
     print("Complete.")
 
