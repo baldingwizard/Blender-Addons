@@ -1,6 +1,8 @@
 # Script to convert a smoke simulation PointCache2 into an OpenEXR image
 
 # RAS 26/06/2019 : Added 'pack' and 'use_fake_user' for newly generated images
+# RAS 26/08/2019 : Improve efficiency of 'pack', add better diagnostics as to progress, implement 'multiRow' mode
+#                  - all changes developed as part of the MRI Raw to EXR script.
 
 #TODO: multiple frames to one exr. Also, image compression.
 
@@ -92,6 +94,7 @@ import imp
 import os
 import sys
 import struct
+import math
 
 #imp.load_source("lzo_spec", os.path.join(sys.path[0],"io_scene_fpx"))
 
@@ -314,7 +317,7 @@ class Lzo_Codec:
 
 ######## My code start #########
 
-def convert_pointcache_volume_to_exr(fname, oPattern, oframeno):
+def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False):
     
     f = open(fname, "rb")
 
@@ -409,22 +412,22 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno):
         hires_flame = None
 
         if rgb_b != None:
-            build_exr_from_buffers(gen_filename("smoke",oPattern, oframeno), (res_x, res_y, res_z), rgb_r, rgb_g, rgb_b, None)
+            build_exr_from_buffers(gen_filename("smoke",oPattern, oframeno), (res_x, res_y, res_z), rgb_r, rgb_g, rgb_b, None, multiRow=multiRow)
         else:
-            build_exr_from_buffers(gen_filename("smoke",oPattern, oframeno), (res_x, res_y, res_z), density, density, density, None)
+            build_exr_from_buffers(gen_filename("smoke",oPattern, oframeno), (res_x, res_y, res_z), density, density, density, None, multiRow=multiRow)
 
         if hires_rgb_b != None:
-            build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_rgb_r, hires_rgb_g, hires_rgb_b, None)
+            build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_rgb_r, hires_rgb_g, hires_rgb_b, None, multiRow=multiRow)
         #else:
-        #    build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x, res_y, res_z), density, density, density, None)
+        #    build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x, res_y, res_z), density, density, density, None, multiRow=multiRow)
 
-        build_exr_from_buffers(gen_filename("velocity",oPattern, oframeno), (res_x, res_y, res_z), vx, vy, vz, None)
+        build_exr_from_buffers(gen_filename("velocity",oPattern, oframeno), (res_x, res_y, res_z), vx, vy, vz, None, multiRow=multiRow)
 
         if flame != None:
-            build_exr_from_buffers(gen_filename("flame_heat_fuel",oPattern, oframeno), (res_x, res_y, res_z), flame, heat, fuel, None)
+            build_exr_from_buffers(gen_filename("flame_heat_fuel",oPattern, oframeno), (res_x, res_y, res_z), flame, heat, fuel, None, multiRow=multiRow)
                 
         if hires_flame != None:
-                build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None)
+                build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)
 
     f.close()
 
@@ -463,18 +466,31 @@ def read_block(f, size):
                 return buffer
                 
 
-def build_exr_from_buffers(filename, dimensions, bufferR, bufferG, bufferB, bufferA):
+def build_exr_from_buffers(filename, dimensions, bufferR, bufferG, bufferB, bufferA, multiRow=False):
 
-    print("Writing %s" % filename)
+    if multiRow:
+        numColumns = math.ceil(math.sqrt(dimensions[2]))
+        numRows = math.ceil(dimensions[2] / numColumns)
+    else:
+        numColumns = dimensions[2]
+        numRows = 1
+
+    filename = str(dimensions[2])+"_"+str(numColumns)+"x"+str(numRows)+"_"+filename
+
+    print("Building image %s" % filename)
 
     # Size the image to allow space for Z images of size X by Y
-    width = (dimensions[0]+1)*dimensions[2]
-    height = dimensions[1]
+    width = (dimensions[0]+1)*numColumns
+    if numRows >1:
+        height = (dimensions[1]+1)*numRows
+    else:
+        height = dimensions[1]
 
     # Create the image
     image = bpy.data.images.new(filename, width=width, height=height,float_buffer=True)
 
     # Create an empty array of pixel data (each will hold R, G, B, A values as floats)
+    print("Clearing image...")
     pixels = [None] * width * height
     for x in range(0,width):
         for y in range(0,height):
@@ -482,10 +498,18 @@ def build_exr_from_buffers(filename, dimensions, bufferR, bufferG, bufferB, buff
             
     print("File '"+filename+"', Dimensions = ("+str(dimensions[0])+","+str(dimensions[1])+","+str(dimensions[2])+")")
     
-    for x in range(0,dimensions[0]):
-        #print("Processing "+str(x))
-        for y in range(0,dimensions[1]):
-            for z in range(0,dimensions[2]):
+    for z in range(0,dimensions[2]):
+        print("Processing layer "+str(z))
+        
+        #Calculate the location of this 'tile'
+        tileNoX = z % numColumns
+        tileNoY = int((z - tileNoX) / numColumns)
+        tileOffset = tileNoX*(dimensions[0]+1)+tileNoY*width*(dimensions[1]+1)
+
+        for x in range(0,dimensions[0]):
+        
+            for y in range(0,dimensions[1]):
+            
                 p = x+y*dimensions[0]+z*dimensions[0]*dimensions[1]
 
                 # If R, G, or B are 'none' then 0.0 is assumed
@@ -507,15 +531,17 @@ def build_exr_from_buffers(filename, dimensions, bufferR, bufferG, bufferB, buff
                 else:
                     valA = 1.0
                 
-                pixels[(y*width)+x+z*(dimensions[0]+1)] = [valR,valG,valB,valA]
+               # pixels[(y*width)+x+z*(dimensions[0]+1)] = [valR,valG,valB,valA]
+                pixels[tileOffset + x + y*width] = [valR,valG,valB,valA]
 
     # 'flatten' the array - so [R1,G1,B1,A1], [R2,G2,B2,A2], [R3,G3,B3,A3],.... becomes R1,B1,G1,A1,R2,G2,B2,A2,R3,G3,B3,A3,....    
-    pixels = [chan for px in pixels for chan in px]
-
     # Store the pixels in the image
-    image.pixels = pixels
+    print("Image build complete, storing pixels...")
+    image.pixels = [chan for px in pixels for chan in px]
+    print("Updating image...")
     image.update()
 
+    print("Saving image...")
     # Save image to temporary file and pack it (from answer by @sambler)
     scn = bpy.data.scenes.new('img_settings')
     scn.render.image_settings.file_format = 'OPEN_EXR'
@@ -539,6 +565,7 @@ def build_exr_from_buffers(filename, dimensions, bufferR, bufferG, bufferB, buff
     image.pack()
     #os.remove(img_path+img_file)
     image.use_fake_user = True
+    print("Complete.")
 
 class Smoke2EXR_Operator(bpy.types.Operator):
     """Convert a smoke domain into an EXR image file"""
@@ -551,10 +578,12 @@ class Smoke2EXR_Operator(bpy.types.Operator):
 
     frameNo = bpy.props.IntProperty(description='Enter the frame to convert', name='Frame')
     smokeCacheName = bpy.props.StringProperty(description="The selection object's smoke cache name", name="Cache Name")
+    multiRow = bpy.props.BoolProperty(description='Create multi-row image instead of a single row of tiles', name="Multi-Row")
     
 
     def __init__(self):
         super().__init__()
+        self.multiRow = True
         
 
     @classmethod
@@ -608,7 +637,7 @@ class Smoke2EXR_Operator(bpy.types.Operator):
             #TODO: Pickup the "random" generated name if we don't find an explicit name
             
         cachefile = bpy.path.abspath("//blendcache_%s/%s_%06i_00.bphys" % (bpy.path.basename(bpy.context.blend_data.filepath[:-6]),smokeCacheName,self.frameNo))
-        convert_pointcache_volume_to_exr(cachefile, "smoke2exr_%s_%06i", self.frameNo)
+        convert_pointcache_volume_to_exr(cachefile, "smoke2exr_%s_%06i", self.frameNo, self.multiRow)
         return {'FINISHED'}
     
 
