@@ -7,6 +7,7 @@
 #                   Also, set EXR codec to 'zip' to reduce packed size of image.
 # 0.12 26/08/2019 : Improve efficiency of 'pack', add better diagnostics as to progress, implement 'multiRow' mode
 # 0.13 26/08/2019 : Fix bug in running on 2.79 (failed to pack image)
+# 0.14 28/08/2019 : Re-implement hires blocks
 ##################################################################################################################
 
 #TODO: Possibly bake Ambient Occlusion into the smoke color (optional setting)
@@ -14,7 +15,7 @@
 bl_info = {  
  "name": "Smoke2EXR",
  "author": "Rich Sedman",  
- "version": (0, 13),  
+ "version": (0, 14),  
  "blender": (2, 80, 0),  
  "location": "(operators)",  
  "description": "Provide a means of converting a smoke simulation into an image that can be used to access the smoke data independently of the simulation",  

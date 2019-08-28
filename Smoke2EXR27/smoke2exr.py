@@ -4,7 +4,7 @@
 # RAS 26/08/2019 : Improve efficiency of 'pack', add better diagnostics as to progress, implement 'multiRow' mode
 #                  - all changes developed as part of the MRI Raw to EXR script.
 
-#TODO: multiple frames to one exr. Also, image compression.
+#TODO: multiple frames to one exr. Also, image compression... - actually, now 'multirow', can't do multiple frames... perhaps that could be a sub-mode for single-row mode only.
 
 # Supports PointCache smoke version 1.04
 #
@@ -51,13 +51,13 @@
 #		ptcache_file_write(pf, &sds->res_min, 3, sizeof(int));
 #		ptcache_file_write(pf, &sds->res_max, 3, sizeof(int));
 #		ptcache_file_write(pf, &sds->active_color, 3, sizeof(float));
-# Optional turbulance - hi-res [...need to determine size... possibly as above, times ((2^divisions)^3) ]
+# Optional turbulance - hi-res [...size based on number of 'divisions'+1 cubed - so 1 division is 2x2x2 times bigger, 2 divisions is 3x3x3 times bigger, etc.]
 #   Optional:
 #       block - density (hi-res)
 #   Optional :
-#       block - flame (hi-res)
-#       block - fuel (hi-res)
-#       block - react (hi-res)
+#       block - flame (hi-res) [TODO: seems to only be populated with 'small' array - need to analyse content - not 'flame']
+#       block - fuel (hi-res)  [TODO: seems to only be populated with 'small' array - need to analyse content - not 'fuel']
+#       block - react (hi-res) [TODO: seems to only be populated with 'small' array - need to analyse content - not 'react']
 #   Optional :
 #       block - red (hi-res)
 #       block - green (hi-res)
@@ -317,7 +317,7 @@ class Lzo_Codec:
 
 ######## My code start #########
 
-def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False):
+def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False, hiresMultiplier=1):
     
     f = open(fname, "rb")
 
@@ -349,7 +349,7 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False):
         SM_ACTIVE_COLOR_SET	= 8
 
         #TODO : ....'amplify' setting determines how many divisions the hires volume has. 1 -> 2x2x2, 2 -> 3x3x3, etc. - so multiply by amplify+1 in each dimension. Need to change the 'size' and also the 'dimension' by this factor.
-        hiresmult = 3 + 1       # 'amplify'+1
+        hiresmult = hiresMultiplier       # 'amplify'+1
 
         size = res_x * res_y * res_z * 4
         hiressize = size * hiresmult*hiresmult*hiresmult
@@ -390,7 +390,7 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False):
         print("Extra Fields = "+str(rec))
         
         hires_density = read_block(f, hiressize)
-        hires_flame = read_block(f, hiressize)
+        hires_flame = read_block(f, hiressize)      #TODO: Need to figure out why these aren't coming back as 'hires' data blocks
         hires_fuel = read_block(f, hiressize)
         hires_react = read_block(f, hiressize)
 
@@ -407,9 +407,9 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False):
         tcw = read_block(f, size)
 
         #TODO: Get HIRES working correctly
-        print("WARNING: HIRES not working - disabled HIRES output")
-        hires_rgb_b = None
-        hires_flame = None
+        #print("WARNING: HIRES not working for flame, fuel, react")
+        #hires_rgb_b = None
+        #hires_flame = None
 
         if rgb_b != None:
             build_exr_from_buffers(gen_filename("smoke",oPattern, oframeno), (res_x, res_y, res_z), rgb_r, rgb_g, rgb_b, None, multiRow=multiRow)
@@ -418,16 +418,18 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False):
 
         if hires_rgb_b != None:
             build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_rgb_r, hires_rgb_g, hires_rgb_b, None, multiRow=multiRow)
-        #else:
-        #    build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x, res_y, res_z), density, density, density, None, multiRow=multiRow)
+        else:
+            if hires_density != None:
+                build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_density, hires_density, hires_density, None, multiRow=multiRow)
 
         build_exr_from_buffers(gen_filename("velocity",oPattern, oframeno), (res_x, res_y, res_z), vx, vy, vz, None, multiRow=multiRow)
 
         if flame != None:
             build_exr_from_buffers(gen_filename("flame_heat_fuel",oPattern, oframeno), (res_x, res_y, res_z), flame, heat, fuel, None, multiRow=multiRow)
                 
-        if hires_flame != None:
-                build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)
+        #if hires_flame != None:
+        #        #build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)
+        #        build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x, res_y, res_z), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)     #TODO: Determine why these buffers aren't hires and what they are... something to do with hires turbulence?!!!
 
     f.close()
 
@@ -628,6 +630,7 @@ class Smoke2EXR_Operator(bpy.types.Operator):
         print("Smoke cache name = "+str(self.smokeCacheName))
         
         self.smokeCache = smokeCache
+        self.domainSettings = smokeCache = selected_object.modifiers['Smoke'].domain_settings
         
         return wm.invoke_props_dialog(self)
 
@@ -641,7 +644,10 @@ class Smoke2EXR_Operator(bpy.types.Operator):
             #TODO: Pickup the "random" generated name if we don't find an explicit name
             
         cachefile = bpy.path.abspath("//blendcache_%s/%s_%06i_00.bphys" % (bpy.path.basename(bpy.context.blend_data.filepath[:-6]),smokeCacheName,self.frameNo))
-        convert_pointcache_volume_to_exr(cachefile, "smoke2exr_%s_%06i", self.frameNo, self.multiRow)
+        
+        hiresMultiplier = self.domainSettings.amplify + 1
+        
+        convert_pointcache_volume_to_exr(cachefile, "%s_%06i", self.frameNo, self.multiRow, hiresMultiplier=hiresMultiplier)
         return {'FINISHED'}
     
 
