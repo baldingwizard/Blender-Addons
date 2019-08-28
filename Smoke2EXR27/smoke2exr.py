@@ -3,6 +3,7 @@
 # RAS 26/06/2019 : Added 'pack' and 'use_fake_user' for newly generated images
 # RAS 26/08/2019 : Improve efficiency of 'pack', add better diagnostics as to progress, implement 'multiRow' mode
 #                  - all changes developed as part of the MRI Raw to EXR script.
+# RAS 28/08/2019 : Implement hires capture
 
 #TODO: multiple frames to one exr. Also, image compression... - actually, now 'multirow', can't do multiple frames... perhaps that could be a sub-mode for single-row mode only.
 
@@ -427,10 +428,10 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False, 
         if flame != None:
             build_exr_from_buffers(gen_filename("flame_heat_fuel",oPattern, oframeno), (res_x, res_y, res_z), flame, heat, fuel, None, multiRow=multiRow)
                 
-        #if hires_flame != None:
-        #    #build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)
-        #    #build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x, res_y, res_z), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)     #TODO: Determine why these buffers aren't hires and what they are... something to do with hires turbulence?!!!
-        #    build_exr_from_buffers(gen_filename("hires_unknown",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)     #TODO: Determine why these buffers aren't hires and what they are... something to do with hires turbulence?!!!
+        if hires_flame != None:
+            #build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)
+            #build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x, res_y, res_z), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)     #TODO: Determine why these buffers aren't hires and what they are... something to do with hires turbulence?!!!
+            build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)     #TODO: Determine why these buffers aren't hires and what they are... something to do with hires turbulence?!!!
 
 
     f.close()
