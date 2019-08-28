@@ -390,7 +390,7 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False, 
         print("Extra Fields = "+str(rec))
         
         hires_density = read_block(f, hiressize)
-        hires_flame = read_block(f, hiressize)      #TODO: Need to figure out why these aren't coming back as 'hires' data blocks
+        hires_flame = read_block(f, hiressize)      #TODO: Need to figure out why these aren't coming back as 'hires' data blocks - I think it's getting confused with other blocks... if enable multi-color (more than one colored emitter) then these seem to be the hires colors!! Otherwise it's "something else" but in *lowres*
         hires_fuel = read_block(f, hiressize)
         hires_react = read_block(f, hiressize)
 
@@ -417,7 +417,7 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False, 
             build_exr_from_buffers(gen_filename("smoke",oPattern, oframeno), (res_x, res_y, res_z), density, density, density, None, multiRow=multiRow)
 
         if hires_rgb_b != None:
-            build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_rgb_r, hires_rgb_g, hires_rgb_b, None, multiRow=multiRow)
+            build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_rgb_r, hires_rgb_g, hires_rgb_b, None, multiRow=multiRow)          #TODO: This also seems to be 'wrong' if multi-colored!!!!
         else:
             if hires_density != None:
                 build_exr_from_buffers(gen_filename("hires_smoke",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_density, hires_density, hires_density, None, multiRow=multiRow)
@@ -428,8 +428,10 @@ def convert_pointcache_volume_to_exr(fname, oPattern, oframeno, multiRow=False, 
             build_exr_from_buffers(gen_filename("flame_heat_fuel",oPattern, oframeno), (res_x, res_y, res_z), flame, heat, fuel, None, multiRow=multiRow)
                 
         #if hires_flame != None:
-        #        #build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)
-        #        build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x, res_y, res_z), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)     #TODO: Determine why these buffers aren't hires and what they are... something to do with hires turbulence?!!!
+        #    #build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)
+        #    #build_exr_from_buffers(gen_filename("hires_flame_react_fuel",oPattern, oframeno), (res_x, res_y, res_z), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)     #TODO: Determine why these buffers aren't hires and what they are... something to do with hires turbulence?!!!
+        #    build_exr_from_buffers(gen_filename("hires_unknown",oPattern, oframeno), (res_x*hiresmult, res_y*hiresmult, res_z*hiresmult), hires_flame, hires_react, hires_fuel, None, multiRow=multiRow)     #TODO: Determine why these buffers aren't hires and what they are... something to do with hires turbulence?!!!
+
 
     f.close()
 
