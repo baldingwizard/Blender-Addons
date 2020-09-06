@@ -9,6 +9,7 @@
 # 0.13 26/08/2019 : Fix bug in running on 2.79 (failed to pack image)
 # 0.14 28/08/2019 : Implement hires for density, fuel/react/heat, RGB
 # 0.20 28/08/2020 : Use Smoke2EXR as a basis for same functionality to extract direct from Fluid modifier grids
+# 0.21 06/09/2020 : Minor tweaks
 ##################################################################################################################
 
 #TODO: Possibly bake Ambient Occlusion into the smoke color (optional setting)
@@ -16,7 +17,7 @@
 bl_info = {  
  "name": "Fluid2EXR",
  "author": "Rich Sedman",  
- "version": (0, 20),  
+ "version": (0, 21),  
  "blender": (2, 80, 0),  
  "location": "(operators)",  
  "description": "Provide a means of converting a fluid simulation into an image that can be used to access the volumetric data independently of the simulation",  

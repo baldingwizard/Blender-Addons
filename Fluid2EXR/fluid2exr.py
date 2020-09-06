@@ -10,6 +10,7 @@
 # Inspiration for the re-write taken from https://blender.stackexchange.com/a/182868/29586 by Leander
 #
 # 1.00 30/08/2020 : Use '...._grid' data direct from the modifier rather than read from Pointcache files
+# 1.01 06/09/2020 : Use Numpy to improve efficiency
 
 import bpy
 import os
@@ -320,9 +321,9 @@ class Fluid2EXR_Operator(bpy.types.Operator):
     """Convert a fluid domain into an EXR image file"""
     
     bl_idname = "operator.smoke2exr"
-    bl_label = "Smoke2EXR - Convert smoke domain into an EXR image"
+    bl_label = "Fluid2EXR - Convert smoke fluid domain into an EXR image"
     bl_space_type = 'VIEW_3D'
-    label = 'Smoke2EXR'
+    label = 'Fluid2EXR'
     #bl_options = {}
 
     frameNo: bpy.props.IntProperty(description='Enter the frame to convert', name='Frame')
