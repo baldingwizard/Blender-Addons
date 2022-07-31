@@ -1,0 +1,8 @@
+# Blend : Blend values between a range
+
+#For each point, calculate its 'influence' as '1 - dist_to_cutoff_as_proportion distance between'
+_range = UpperLimit-LowerLimit
+_LowerInfluence = clip(1-abs((LowerLimit{0} - Input{0.5})/_range))**Power{2}
+_UpperInfluence = clip(1-abs((UpperLimit{1} - Input)/_range))**Power{2}
+
+Output = (Input<LowerLimit)*LowerValue+(Input>UpperLimit)*UpperValue+not(or(Input<LowerLimit,Input>UpperLimit))*(LowerValue{0}*_LowerInfluence + UpperValue{1}*_UpperInfluence)/(_LowerInfluence+_UpperInfluence)

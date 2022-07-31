@@ -1,0 +1,15 @@
+# (New)Mix4 : Mix 4 colors based on the values of 4 input factors
+
+_color1 = Color1[]
+_color2 = Color2[]
+_color3 = Color3[]
+_color4 = Color4[]
+
+_fac1 = Factor1
+_fac2 = Factor2
+_fac3 = Factor3
+_fac4 = Factor4
+
+_factorSum = _fac1 + _fac2 + _fac3 + _fac4
+
+Output[] = vdiv(vadd(vmult(_color1, _fac1), vadd(vmult(_color2, _fac2), vadd(vmult(_color3, _fac3),vmult(_color4, _fac4)))), _factorSum)

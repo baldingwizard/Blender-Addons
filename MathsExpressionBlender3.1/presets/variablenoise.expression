@@ -1,0 +1,2 @@
+# (New)Variable Distort(Noise) : Variable strength noise (centred on 0,0,0)
+Noise[] = vmult(vsub(noise(Input[], Scale), 0.5), Factor)
