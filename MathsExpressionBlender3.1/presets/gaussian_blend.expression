@@ -1,0 +1,4 @@
+# Normal Distribution : Normal(Gaussian) distribution (Bell Curve)
+
+#Note : e = 2.71828
+Output = (2.71828**(-1/2*(Input*2.71828/Span{1})**2))*Scale{1}

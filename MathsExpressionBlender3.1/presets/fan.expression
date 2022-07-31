@@ -1,0 +1,6 @@
+# Fan : Fan from centre
+?Input:Vector,XY
+:Input.Vector:  _x = Vector[x], _y = Vector[y]
+:Input.XY:      _x = x, _y = y-OffsetY
+
+mmod((atan2(_x-OffsetX{0.5},_y-OffsetY{0.5})/3.141)/2,1/Scale{8})*Scale

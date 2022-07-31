@@ -1,0 +1,469 @@
+Node Expressions
+================
+
+The Node Expressions add-on provides a means to enter a mathematical expression 
+which is automatically parsed to generate a node group built up of standard maths
+nodes (and so is GPU-friendly) to implement that expression. It is available within
+the Node Editor 'Add' menu as 'Maths Expression'. On selecting the menu option 
+you'll be presented with a popup window prompting you to enter your expression.
+
+For example, entering the expression 'a + b' will result in a node with two inputs ('a'
+and 'b'), outputting a single value that is the mathematical sum of 'a' and 'b'.
+The expression will be contained within a new node group with the inputs and outputs
+named appropriately (in this case 'a' and 'b'). The output of the group can be
+indicated by including the name in the expression as in 'SumOfValues = a + b'.
+
+The following standard mathematical operations are implemented :
+
+    Operation           Example     Description/Notes
+    ------------------- ----------- -----------------------------
+    Addition            a + b       Add two numbers together
+    Subtraction         a - b       Subtract one number from another
+    Multiplication      a * b       Multiply two numbers together
+    Division            a / b       Divide one number by another
+    Power               a ** b      Raise one number to the power of the other
+    Sine                sin(x)      Calculate the Sine of an angle (in radians)
+    Cosine              cos(x)      Calculate the Cosine of an angle (in radians)
+    Tangent             tan(x)      Calculate the Tangent of an angle (in radians)
+    Arcsine             asin(x)     Inverse Sine
+    Arccosine           acos(x)     Inverse Cosine
+    Arctangent          atan(x)     Inverse Tangent (convert gradient to angle)
+    Arctangent(2)       atan2(x,y)  Alternative Arctangent accepting two arguments (components of gradient to angle)
+    Absolute            abs(x)      The magnitude of the value (ie, ignore the sign if negative)
+    Round               round(x)    Round to the nearest whole number
+    Maximum             max(x,y)    Determine the largest of the provided values (can list any number of input values - eg, 'max(a,b,c,d,e,....)'
+    Minimum             min(x,y)    Determine the smallest of the provided values (can list any number of input values - eg, 'min(a,b,c,d,e,....)'
+    Modulo              mod(x,y)    Return the Modulo (the remainder after dividing x by y) (symetrical for negative values)
+    Mathematical Modulo mmod(x,y)   Return the Modulo (the remainder after dividing x by y) (mathematically correct modulo function)
+    Log                 log(x,y)    Return the Logarithm
+    Greater Than        x > y       'True' (1.0) if the first value is greater than the second, else 'False' (0.0)
+    Less Than           x < y       'True' (1.0) if the first value is less than the second, else 'False' (0.0)
+    Greater or Equal    x >= y      'True' (1.0) if the first value is greater than or equal to the second, else 'False' (0.0)
+    Less Than or Equals x <= y      'True' (1.0) if the first value is less than or equal to the second, else 'False' (0.0)
+    Equals              x == y      'True' (1.0) if the two values are equal, else 'False' (0.0)
+    Not                 not(a)      Invert the logical value ('True' becomes 'False', 'False' becomes 'True')
+    And                 and(a,b)    Logically combine multiple values with the 'and' operator (ie, only produce 'True' if all inputs are 'True')
+    Or                  or(a,b)     Logically combine multiple values with the 'or' operator (ie, produce 'True' if any input is 'True')
+    Exclusive-Or        xor(a,b)    Logical 'exclusive-or' operation
+    Clamp               clamp(a)    Clamp the value to be within the range 0.0 to 1.0
+    Clip                clip(a)     Same as 'clamp'
+    Fraction            fract(a)    Return the fractional part of a number (eg, 'fract(5.678)' would return '0.678')
+    Floor               floor(a)    Round down to the next lowest whole number
+    Ceiling             ceil(a)     Round up to the next highest whole number
+    
+    
+Additionally, you can work with Vectors using the following operations :
+
+    Operation           Example         Description/Notes
+    ------------------- --------------- -------------------------
+    Combine components  combine(x,y,z)  Combine individual values to create a vector
+    Add                 vadd(v,w)       Add two vectors together
+    Subtract            vsub(v,w)       Subtract one vector from the other
+    Multiply            vmult(v,w)      Multiply components of two vectors to produce new vector (v[x]*w[x], v[y]*w[y], v[z]*w[z])
+    Divide              vdiv(v,w)       Divide components of two vectors to produce new vector (v[x]/w[x], v[y]/w[y], v[z]/w[z])
+    Dot Product         vdot(v,w)       Return the dot-product of the two input vectors
+    Cross Product       vcross(v,w)     Return the cross-product of the two input vectors
+    Normalize           vnorm(v)        Scale a vector so that it has length of 1.0
+    (split vector)      v[n]            Extract a 'channel' from a vector - ie, the x,y,z components of a vector. 
+                                         Valid components are '[0]', '[1]', '[2]' for the first, second, third
+                                         component although can alternatively reference as '[x]', '[y]', '[z]'
+                                         or '[r]', '[g]', '[b]' for convenience when dealing with position/
+                                         direction vectors or colors
+    Mix                 mix(fac,c1,c2)  Use factor 'fac' to mix between 'c1' and 'c1'
+
+
+
+
+Textures and additional functions are also available :
+
+    Function    Example                                     Description/Notes
+    ---------------------------------------------------------------------------------
+    Noise       noise(vector, scale, detail, distortion)    The 'detail' and 'distortion' parameters are 
+                                                             optional (default values will be assumed)
+                                                             
+    Musgrave    musgrave(vector,scale,det,dim,lac,off,gain) The last 5 arguments are optional and defaulted if not present
+                musgrave.fbm(vector,scale,....)             Same as above ('fBM' is the default musgrave type)
+                musgrave.mf(vector,scale,....)              As above but Multi-Fractal
+                musgrave.rmf(vector,scale,....)             As above but Ridged Multi-Fractal
+                musgrave.hmf(vector,scale,....)             As above but Hetero Multi-Fractal
+                musgrave.ht(vector,scale,....)              As above but Hetero Terrain
+                
+    Voronoi     voronoi(vector, scale)                      Voronoi texture ('intensity' mode)
+                voronoi.cell(vector, scale)                 Voronoi 'cells'
+                voronoi.crackle(vector, scale)              Voronoi 'intensity crackle' (Blender 2.8+)
+                voronoi.distance1(vector, scale)            Voronoi 'intensity Closest Distance' (Blender 2.8+)
+                voronoi.distance2(vector, scale)            Voronoi 'intensity 2nd Closest Distance' (Blender 2.8+)
+                voronoi.distance3(vector, scale)            Voronoi 'intensity 3rd Closest Distance' (Blender 2.8+)
+                voronoi.distance4(vector, scale)            Voronoi 'intensity 4th Closest Distance' (Blender 2.8+)
+                
+    Point       point(vector, mode, obj, [pnum,] radius,    Point Density texture. Mode can be either PARTICLE or VERTEX.
+                                     res, attr, options...) obj is a quoted string (eg, '"Cube"'), pnum must be specified if using PARTICLE mode, radius, res, attr are optional (attr is only used for VERTEX WEIGHT mode). Options can be specified in any order and adjust the texture settings of Space : OBJECT/WORLD, Interpolation : LINEAR/CLOSEST/CUBIC, Color(Vertex) : COLOR/WEIGHT/NORMAL, Color(Particle) : VELOCITY/SPEED/AGE.
+                point.color(vector, .....)                  Same as above
+                point.density(vector, .....)                As above but using 'Density' output
+                
+                Example :       point.density(Input, PARTICLE, "Cube", 1, 0.45, 150, WORLD, CLOSEST, AGE)
+                
+    Image       image(vector, image, options...)            Image texture. Options set various properties of the texture as LINEAR/CLOSEST/CUBIC/SMART, FLAT/BOX/SPHERE/TUBE, REPEAT/EXTEND/CLIP, sRGB/NONE.
+                image.alpha(vector, image, options...)      As above but using 'Alpha' output
+                                        
+                
+    Color Ramp  colorramp(value, val1, col1, ...)           Color Ramp with the specified color points (val, col). Colors can be defined either as a single value for greyscale or using 'combine(r,g,b)' for a color
+                colorramp(value, options, val1, col1, ...)  As above but including options to set color mode (RGB, HSV, HSL), hue interpolation (NEAR, FAR, CW, CCW), interpolation ('EASE', 'CARDINAL', 'LINEAR', 'B_SPLINE', 'CONSTANT')
+                
+    Inputs      inputs(var1, ....)                          Define the 'input' variables for this group (or sub-group). This can be used instead of prefixing 'hidden' variables with '_', by defining the list of 'external' variables to be visible on this group.
+    Outputs     outputs(var1, ....)                         Define the 'output' variables for this group (or sub-group). This can be used instead of prefixing 'hidden' variables with '_', by defining the list of 'external' variables to be visible on this group.
+
+
+New group nodes can be defined using an expression within 'start' and 'end' functions and
+then 'added' to and referred to in the main expression :
+
+
+
+    Example                                                 Description/Notes
+    ---------------------------------------------------------------------------------
+    group:start(groupname, var1, var2, ....)                Start defining a new group, naming the input sockets (var1, var2, ...)
+
+    group:end(groupname)                                    End of definition of new group
+    
+    group:add(groupname, instancename, var1, var2, .....)   Add a named instance of a group to the expression, assigning its inputs (var1, var2, ...)
+
+    group:<instancename>[<socketname>]                      Refer to a specific output of a specific instance of a group
+
+    function:start(funcname, var1, var2, ....)              Start defining a new function, naming the input sockets (var1, var2, ...) - Note : Functions should produce only one output.
+
+    function:end(funcname)                                  End of definition of new function
+    
+    fn:<funcname>(var1, var2, .....)                        Use the defined function (add as a new group node, passing in the specified var1, var2, etc.)
+
+
+Any of the above functions, operators and comparators can be combined into a single
+expression and standard operator precedence rules should be followed - ie, power
+takes precedence over multiplication and division, which take precedence over addition
+and subtraction. Comparators (ie, >, <, >=, <=, ==) take least precedence. The
+expression can also include brackets to indicate overriding the operator precedence.
+
+The expression can be edited using the Edit button of the custom node automatically
+created within the node group. The node group is fully GPU-compatible (since it only
+uses 'standard' shader nodes) and can be exported to use in a Blend file independently
+of the add-on.
+
+The expression can be arbitrarily complicated and the group inputs and outputs will be
+automatically updated with the appropriate inputs and outputs to the expression.
+
+
+Named Expressions
+=================
+If an expression does not indicate a specific name for the expression it will be labelled
+as 'Value' - and this will be used for the group output socket label. However, an
+alternative 'name' can be given to the expression by using the '=' operator (which is
+distinct from the '==' operator that indicates a test on equality - the '=' operator
+indicates asignment). For example, to name an expression that sums 3 input values as
+'Sum' you could simply enter :
+
+    Sum = a + b + c
+
+
+Sub-Expressions
+===============
+Multiple expressions can be entered by separating them with commas. In this case, each
+can be assigned a different name so that the final node provides multiple named
+outputs :
+
+    Sum = a+b+c, Maximum = max(a,b,c), Minimum = min(a+b+c)
+
+Sub-expressions can be chained together by referencing each other by name. For example,
+to create a node which simultaneously sums and averages three input values you could
+enter :
+
+    Sum = a+b+c, Average = Sum / 3
+
+The above example will create a node group with inputs of 'a', 'b' and 'c', and outputs
+of 'Sum' and 'Average'.
+
+
+Hidden Sockets
+==============
+By default all variables and expressions are added to the node group to make them
+available as inputs/outputs to the group. This means that output at each 'stage' of
+the calculation (such as the 'Sum' in the above example) will be available outside the
+group. In order to hide such details the variable/expressions can be prefixed with '_'.
+For example, to create a node that only provides the Average we can take the above
+example and add '_' to those values that we do not want to be visible outside of the
+group. The following will create a node group with three inputs ('a', 'b', 'c') and
+one output ('Average') but is otherwise identical to the previous example :
+
+    _Sum = a+b+c, Average = _Sum / 3
+
+
+Default Values
+==============
+
+Default values can be set for any input variable by adding a suffix within '{}' braces
+following any one usage of that variable. For example, to create a group to sum 3
+values with default values of 0.25, 0.5 and 0.1 you could enter :
+
+    Sum=a{0.25}+b{0.5}+c{0.1}
+
+The defaults are only used when creating a new expression node or when creating a new
+group from an existing expression. Editing an existing expression to include defaults
+will not update any existing nodes.
+
+
+Vectors
+=======
+When creating an expression you can indicate that a result should be interpreted as a
+Vector by including a suffix of '[]'. In addition, multiple individual values can be
+combined into a vector using the 'combine(...)' function as follows :
+
+    Vector[] = combine(x,y,z)
+    
+Furthermore, a vector can be split into its individual sub-elements by including a
+'[n]' suffix - with 'n' indicating which part of the vector to extract. For example,
+to use the individual elements of an input vector ('Input') and calculate its length
+you could use the following :
+
+    Length = (Input[0]**2 + Input[1]**2 + Input[2]**2) ** 0.5
+    
+(ie, length equals square-root of the sum of the squares (pythagoras))
+
+For convenience, you can alternatively use '[x]', '[y]', '[z]' for location/direction
+vectors or '[r]', '[g]', '[b]' to extract the elements of a Color. These are equivalent
+and interchangeable with '[0]', '[1]' and '[2]'.
+    
+Input Vectors can be split into their component parts by including the suffix - for
+example, 'vector[x]' wil extract the first element of the vector. Output variables
+can be defined as vector type by suffixing with '[]', and individual components can
+be combined into a vector using the 'combine(...)' function.
+
+
+'Special' Variables
+===================
+A number of 'special' variables can be used in expressions to represent common input
+values such as those available via the Texture Coordinates or Geometry input nodes.
+Including any of these as input variables to your expression will result in the relevant
+node (eg, Texture Coordinate or Geometry) being added to the group and linked in the
+appropriate place.
+
+Texture Coordinate :
+
+    Variable            Node                    Socket
+    ------------------- ----------------------- -------------
+    Input.Generated     Texture Coordinate      Generated
+    Input.Normal        Texture Coordinate      Normal
+    Input.UV            Texture Coordinate      UV
+    Input.Object        Texture Coordinate      Object
+    Input.Camera        Texture Coordinate      Camera
+    Input.Window        Texture Coordinate      Window
+    Input.Reflection    Texture Coordinate      Reflection
+
+
+Geometry :
+
+    Variable            Node                    Socket
+    ------------------- ----------------------- -------------
+    Geom.Position       Geometry                Position
+    Geom.Normal         Geometry                Normal
+    Geom.TrueNormal     Geometry                True Normal
+    Geom.Tangent        Geometry                Tangent
+    Geom.Incoming       Geometry                Incoming
+    Geom.Parametric     Geometry                Parametric
+    Geom.Backfacing     Geometry                Backfacing
+    Geom.Pointiness     Geometry                Pointiness
+
+
+Object Info :
+
+    Variable            Node                    Socket
+    ------------------- ----------------------- -------------
+    Object.Index        Object Info             Index
+    Object.Material     Object Info             Material Index
+    Object.Random       Object Info             Random
+    Object.Location     Object Info             Location
+
+
+Particle Info :
+
+    Variable                   Node                Socket
+    -------------------------- ------------------- -------------
+     Particle.Index            Particle Info       Index
+     Particle.Age              Particle Info       Age
+     Particle.Lifetime         Particle Info       Lifetime
+     Particle.Location         Particle Info       Location
+     Particle.Size             Particle Info       Size
+     Particle.Velocity         Particle Info       Velocity
+     Particle.AngularVelocity  Particle Info       Angular Velocity
+     Particle.Random           Particle Info       Random
+
+
+Editing Expressions
+===================
+When an expression node group is created an additional node is created to allow the
+group to be manipulated. The node shows the expression along with an 'Edit' button
+which allows the group to be easily edited. In addition to providing the 'Edit'
+button the node can also provide other features depending on the current state of
+the expression (such as 'Revert' to allow the expression to be reset if and edit
+was invalid, or to 'Update' when a text block has been amended).
+
+
+Text Blocks
+===========
+Directly entering the expression into the 'Expression' field is fine for relatively
+simple expressions that need to put together quickly. However, for more complicated
+expressions it is better to create your expression in a text editor window so it can
+be more easily viewed and edited. Within a text block the expression can also include
+comments and additional spacing to make it more readable. To use the text block for
+an expression, enter the expression as 'TEXT:<name>' (where <name> is the name of the
+text block).
+
+Note : When an expression is set to use a text block the expresion control node within
+the group includes an 'Update' button to allow the expression to be updated after the
+text block has been amended in the text editor.
+
+
+Presets
+=======
+When creating new expresions the add-on provides a number of 'Preset' expressions
+that can be selected from a list. The presets can be used as they are or can be
+used as the start point for your own expressions. Some presets include optional
+modes or extra functionality which can be adjusted before the preset is applied.
+In addition, presets can be used to automatically generate a text block so as to 
+allow them to be easily viewed and edited as required.
+
+The following presets are currently available :
+
+    Preset              Description
+    ------------------- -------------------------------------------------------------
+    Blend               Smoothly blend between two input values
+    Cloth Pattern       A repeating pattern akin to printed or woven cloth
+    Fan                 Generate a fan, radiating from the centre
+    Normal Distribtion  Vary the output based on a 'normal' distribution
+    Grid Repeat         Translate input coordinates to generate a repeating grid
+    Hexagons            Generate hexagonal/honeycomb patterns
+    Mandelbulb          Volumetric Mandelbulb
+    Mapping             A 'Mapping' node with the transform adjustable via input nodes
+    Polar Coordinates   Convert a vector into Angle and Direction
+    Scales              Generate overlapping scales
+    Spiral 2D           A simple spiral in 2-dimensions
+    Spiral 3D           A 3-dimensional spiral (can be used to generate a volumetric galaxy)
+    Star                A 2-dirmensional parameterised star/flower
+    Wave                An adjustable 1-dimensional sine wave with additional harmonics
+
+New presets are generally added at each new version of the add-on - so this list
+is expected to grow over time. The presets are intended to provide examples of
+what is possible with the add-on as well as providing useful node groups that can
+be immediately included in your own projects.
+
+Imports/Includes
+================
+Text can be imported into an expression from another text block by using the "include ..." or 
+"import ..." statement. The "include ..." or "import ..." must be at the start of a new line
+and include a single quoted string argument, prefixed with "TEXT:" to indicate a text block.
+For example :
+
+    include "TEXT:myadditionaltext"
+    
+This would look for a text block named 'myadditionaltext' and include the contents in this
+expression (at the point of the 'include' statement).
+
+This allows functions and sub-groups to be specified in a separate file and included for use
+in the expression, without needing to explicitly copy and paste the text into the expression.
+
+For example, if you commonly require the distance of a vector then you could create a text block
+containing a function defining that cacluation and then simply 'include' it in your expression :
+
+    Text Block 'myfunctions' :
+    
+        function:start(vdist, Vector[])
+        Distance = (Vector[x]**2 + Vector[y]**2 + Vector[z]**2)**0.5
+        function:end(vdist)
+
+    Text Block 'myexpression' :
+    
+        include "TEXT:myfunctions"
+        Distance = fn:vdist(Input[])
+        AnotherDistance = fn:vdist(Input2[])
+        MoreDistance = fn:vdist( combine(x, y, z) )
+        
+   The above removes the need to include the 'distance' calculation repeatedly and hides the
+   function within a separate text block.
+
+
+Some Examples
+=============
+In addition to the presets, here are a number of examples to get you started and
+show what's possible :
+
+Grid
+    (mod(x,0.1)/0.1>0.1)*(mod(y,0.1)/0.1>0.1)
+
+Grid(with variable Scale and Thickness)
+    _scale=1/Scale,(mod(x,_scale)/_scale>Thickness)*(mod(y,_scale)/_scale>Thickness)
+
+Wave
+    abs(x-(sin(y*10)/2.5+0.5))>0.1
+
+Combined waves
+    abs(x-sin(y*freq1)*amp1-sin(y*freq2)*amp2-sin(y*freq3)*amp3)<0.05
+
+Fan
+    mod(atan2(x-0.5,y-0.5)+3.141,0.5)/0.5
+
+Spiral
+    mod((_angle+_distance*Curviness)/4,_invertedScale)/_invertedScale, _angle=(atan2(x,y)+3.141)/3.141/2, _distance=((x)**2+(y)**2)**0.5+z/Scale, _invertedScale=1/Scale
+
+Star
+    _dist=(x**2+y**2)**0.5, _angle=atan2(y,x), _edge=sin(_angle*Points)/2+0.5, Output=_dist>_edge*(Outer-Inner)+Inner
+
+Hexagons (extract from hexagons preset text block)
+    #Set X and Y scaling based on Aspect ratio (0.866 for undistorted hexagons (`sin(60 degrees)`)
+    _xpitch=Aspect/Scale
+    _ypitch=0.866/Scale
+
+    #Logic to control where we need to place the reference points
+    _firsthalf=mod(x,_xpitch)>_xpitch/2
+    _tophalf=mod(y,_ypitch)>_ypitch/2
+    _oddline=mod(y,_ypitch*2)>_ypitch
+
+    #Define the reference points - x1 is "main" reference, others positioned in relation to that
+    _x1=x-mod(x,_xpitch)+_oddline*((0-_xpitch/2*0)),  _y1=y-mod(y,_ypitch)+_oddline*_ypitch
+    _x2=_x1+_xpitch,                                  _y2=_y1
+    _x3=(_x1+_x2)/2,                                  _y3=_y1-_ypitch
+    _x4=_x3,                                          _y4=_y1+_ypitch
+    _x5=_x3-_xpitch+_xpitch*2*_firsthalf,             _y5=_y3*not(_tophalf)+_y4*_tophalf
+
+    #Distance to each reference point
+    _d1 = ((x-_x1)**2+(y-_y1)**2)**0.5
+    _d2 = ((x-_x2)**2+(y-_y2)**2)**0.5
+    _d3 = ((x-_x3)**2+(y-_y3)**2)**0.5
+    _d4 = ((x-_x4)**2+(y-_y4)**2)**0.5
+    _d5 = ((x-_x5)**2+(y-_y5)**2)**0.5
+
+    #Distance to the closest point
+    _dist = min(_d1,_d2,_d3,_d4,_d5)
+
+    #Determine which of the reference point is the closest
+    _closest1 = (_dist == _d1)
+    _closest2 = not(_closest1)*(_dist == _d2)
+    _closest3 = not(or(_closest1,_closest2))*(_dist == _d3)
+    _closest4 = not(or(_closest1,_closest2,_closest3))*(_dist == _d4)
+    _closest5 = not(or(_closest1,_closest2,_closest3,_closest4))
+
+    #Determine the distance to the *next* closest
+    _nextdist = max(_closest1*min(_d2, _d3, _d4, _d5)
+                  _closest2*min(_d1, _d3, _d4, _d5)
+                  _closest3*min(_d1, _d2, _d4, _d5)
+                  _closest4*min(_d1, _d2, _d3, _d5)
+                  _closest5*min(_d1, _d2, _d3, _d4, _d5))
+
+    #Determine which of the points is the next closest
+    _nextclosest1 = (_d1 == _nextdist)*not(_closest1)
+    _nextclosest2 = (_d2 == _nextdist)*not(_closest2)*not(_nextclosest1)
+    _nextclosest3 = (_d3 == _nextdist)*not(_closest3)*not(or(_nextclosest1,_nextclosest2))
+    _nextclosest4 = (_d4 == _nextdist)*not(_closest4)*not(or(_nextclosest1,_nextclosest2,_nextclosest3))
+    _nextclosest5 = not(_closest5)*not(or(_nextclosest1,_nextclosest2,_nextclosest3,_nextclosest4))
+
+    #Calculate how close we are to the edge (the edge is halfway between the two distances)
+    Hexagon = 1-(_dist /((_nextdist + _dist)/2))
+    #DistanceFromCentre = _dist
+    #DistanceFromNextCentre = _nextdist
+

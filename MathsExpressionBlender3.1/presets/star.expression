@@ -1,0 +1,16 @@
+# Star : Configurable star 
+?Input:Vector,XY,Object,UV,UV(Recentered)
+?Edge Distance:Disabled,Enabled
+
+:Input.Vector:  _x = Vector[x]      , _y = Vector[y]
+:Input.XY:      _x = x              , _y = y
+:Input.Object:  _x = Input.Object[x], _y = Input.Object[y]
+:Input.UV:             _x = Input.UV[x]    , _y = Input.UV[y]
+:Input.UV(Recentered): _x = Input.UV[x]-0.5    , _y = Input.UV[y]-0.5
+
+_dist=(_x**2+_y**2)**0.5
+_angle=atan2(_y,_x)
+_edge=sin(_angle*Points{5})/2+0.5
+
+Output=_dist>_edge*(Outer{0.45}-Inner{0.25})+Inner
+:Edge Distance.Enabled:EdgeDist = _dist-(_edge*(Outer-Inner)+Inner)

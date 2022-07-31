@@ -1,0 +1,51 @@
+# (New)Cloth Pattern Generator : Generate a repeating pattern reminiscent of some printed cloth
+# Use the Node Expressions add-on (https://blendermarket.com/products/node-expressions) to convert to nodes
+
+_distortedInput[] = vadd(Input[], vmult(vsub(noise(combine(Input[x], Input[y], DistortSeed{0.9}),DistortScale{40}*Scale,0.2),0.5),DistortFactor{0.14}/Scale))
+
+_x = _distortedInput[x]
+_y = _distortedInput[y]
+
+# Calculate 'inverse scale' for convenience
+_invScale = 1/Scale{103.6}
+
+# The coordinates within each 'cell'
+_cellX = mmod(_x,_invScale)/_invScale
+_cellY = mmod(_y,_invScale)/_invScale
+
+# The position of each 'cell'
+_cellCol = _x * Scale - _cellX
+_cellRow =  _y * Scale - _cellY
+
+# Determine whether each cell is on an 'odd' or 'even' row/column
+# (NOTE : Use 'raw' coordinates (rather then cell positions) to avoid rounding)
+# Includes 'FliipDirection' to allow petals to be flipped
+_oddCol = xor(mmod(_x,_invScale*2) > _invScale, mod(floor(FlipDirection),2)>0.5)
+_oddRow = mmod(_y,_invScale*2) > _invScale
+
+# Flip X/Y based on odd/even (to swap direction of alternate petals)
+_cellX2 = _cellX * _oddCol + (1-_cellX) * not(_oddCol)
+_cellY2 = _cellY * _oddRow + (1-_cellY) * not(_oddRow)
+
+# The 'petal' pattern (effectively distance from the diagonal compared to cosine along diagonal)
+#_withinPetal = abs(_cellX2 - _cellY2) < cos((_cellX2 + _cellY2-1)/2*3.141/PetalSpan{0.8})*PetalWidth{0.3}
+_withinPetal = abs(_cellX2 - _cellY2)**PetalPower{0.72} < cos(((_cellX2 + _cellY2-1)/2-PetalStart)*3.141/PetalSpan{0.9})*PetalWidth{0.55}
+
+# Hide those petals that aren't on the junction of a 4x4 grid
+# (again, use raw coordinates to avoid rounding issues)
+_showPetals = or(and(mmod(_x, _invScale*4) < _invScale*2, mmod(_y, _invScale*4) < _invScale*2), floor(ShowAll))
+
+# Banding
+Band = noise(mmod(_x,BandingRepetition{16}/Scale)*Scale+BandingOffset{13.77}, BandingScale{0.4}, BandingDistort{1.58}) > BandingThreshold{0.57}
+
+Weft = max(sin(_y * WeftScale{8.01} * Scale ) - WeftCut{0}, 0)
+
+# Group outputs
+Output[] = combine(_cellCol/Scale, _cellRow/Scale)
+Odd[] = combine(_oddCol, _oddRow)
+Petal = and(_withinPetal, _showPetals)
+
+Combined = xor(Petal, Band)
+
+InkVariation = (noise(combine(_x, _y, InkVariationSeed{2.3}), InkVariationNoiseScale{0.75}*Scale) +0.25) ** InkVariationPower{2.1}
+Ink = Combined * InkVariation * (musgrave(combine(_x, _y, InkSpeckleSeed{0}), InkSpeckleScale{25.4}*Scale)+1.5)/3

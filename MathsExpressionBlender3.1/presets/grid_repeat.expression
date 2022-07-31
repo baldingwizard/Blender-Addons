@@ -1,0 +1,14 @@
+# Grid Repeat : Repeat input coordinates in an nxnxn grid
+?Input:Vector,UV
+?Offset:Enabled,Disabled
+
+:Input.Vector:  _x = Input[x]   , _y = Input[y]   , _z = Input[z]
+:Input.UV:      _x = Input.UV[x], _y = Input.UV[y], _z = Input.UV[z]
+
+Output[] = combine(mmod(_x, _invScale) / _invScale - _offsetX, mmod(_y, _invScale) / _invScale - _offsetY, mmod(_z, _invScale) / _invScale - _offsetZ)
+
+:Offset.Disabled:_offsetX = 0, _offsetY = 0, _offsetZ = 0
+:Offset.Enabled:_offsetX = Offset[x], _offsetY = Offset[y], _offsetZ = Offset[z]
+
+_invScale = 1 / Scale{5}
+
